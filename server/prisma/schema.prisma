@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String?  @unique
+  password  String
+  role      String   @default("TEACHER") // ADMIN, TEACHER, STUDENT
+  name      String
+  photoUrl  String?
+  code      String?  @unique // For students
+
+  // Teacher relations
+  classesManaged Class[] @relation("TeacherClasses")
+  
+  // Student relations
+  enrollments    Enrollment[]
+  
+  // Messages
+  sentMessages   Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  
+  // Grades for students
+  grades    Grade[]
+}
+
+model Class {
+  id        Int      @id @default(autoincrement())
+  name      String
+  subject   String
+  joinCode  String   @unique
+  teacher   User     @relation("TeacherClasses", fields: [teacherId], references: [id])
+  teacherId Int
+  
+  students  Enrollment[]
+  activities Activity[]
+  messages   Message[] @relation("ClassMessages")
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  student   User     @relation(fields: [studentId], references: [id])
+  studentId Int
+  class     Class    @relation(fields: [classId], references: [id])
+  classId   Int
+  
+  @@unique([studentId, classId])
+}
+
+model Activity {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  maxScore    Float   @default(10)
+  
+  class       Class   @relation(fields: [classId], references: [id])
+  classId     Int
+  
+  grades      Grade[]
+}
+
+model Grade {
+  id         Int      @id @default(autoincrement())
+  student    User     @relation(fields: [studentId], references: [id])
+  studentId  Int
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId Int
+  score      Float
+
+  @@unique([studentId, activityId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  from      User     @relation("SentMessages", fields: [fromId], references: [id])
+  fromId    Int
+  
+  // Destination
+  toUser    User?    @relation("ReceivedMessages", fields: [toUserId], references: [id])
+  toUserId  Int?
+  toClass   Class?   @relation("ClassMessages", fields: [toClassId], references: [id])
+  toClassId Int?
+  
+  createdAt DateTime @default(now())
+}
