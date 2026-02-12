@@ -110,7 +110,17 @@ export const DataProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('eduGameUser', JSON.stringify(user));
+      try {
+        // Only save essential data to localStorage to avoid QuotaExceededError
+        // Base64 photos are the main cause of large storage usage
+        const userToSave = { ...user };
+        if (userToSave.photoUrl && userToSave.photoUrl.startsWith('data:')) {
+          delete userToSave.photoUrl;
+        }
+        localStorage.setItem('eduGameUser', JSON.stringify(userToSave));
+      } catch (e) {
+        console.warn("Falha ao salvar no localStorage (Quota excedida):", e);
+      }
       setNeedsRefresh(true);
     } else {
       localStorage.removeItem('eduGameUser');
