@@ -5,14 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "start": "npm --prefix server start",
+    "build": "vite build && npx prisma generate --schema=server/prisma/schema.prisma",
+    "start": "npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.563.0",
+    "prisma": "^6.19.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "xlsx": "^0.18.5"
