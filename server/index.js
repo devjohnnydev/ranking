@@ -138,17 +138,29 @@ app.post('/api/classes/join', asyncHandler(async (req, res) => {
     const enrollment = await prisma.enrollment.upsert({
         where: { studentId_classId: { studentId: parseInt(studentId), classId: targetClass.id } },
         update: {},
-        create: { studentId: parseInt(studentId), classId: targetClass.id }
+        create: {
+            studentId: parseInt(studentId),
+            classId: targetClass.id,
+            status: 'PENDING'
+        }
     });
     res.json(enrollment);
 }));
 
 // Student lookup
 app.get('/api/students', asyncHandler(async (req, res) => {
-    const { classId } = req.query;
+    const { classId, status } = req.query;
     if (!classId || classId === 'undefined') return res.json([]);
+
+    const where = { classId: parseInt(classId) };
+    if (status) {
+        where.status = status;
+    } else {
+        where.status = 'APPROVED'; // Default to approved only
+    }
+
     const enrollments = await prisma.enrollment.findMany({
-        where: { classId: parseInt(classId) },
+        where,
         include: { student: true }
     });
     res.json(enrollments.map(e => e.student));
@@ -169,7 +181,11 @@ app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
         data: { username, password, name, role: 'STUDENT', photoUrl }
     });
     await prisma.enrollment.create({
-        data: { studentId: student.id, classId: targetClass.id }
+        data: {
+            studentId: student.id,
+            classId: targetClass.id,
+            status: 'PENDING'
+        }
     });
     res.json(student);
 }));
@@ -275,7 +291,14 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
 
     let userQuery = { role: 'STUDENT' };
     if (!isJohnny(username) && classId && classId !== 'undefined') {
-        userQuery = { enrollments: { some: { classId: parseInt(classId) } } };
+        userQuery = {
+            enrollments: {
+                some: {
+                    classId: parseInt(classId),
+                    status: 'APPROVED'
+                }
+            }
+        };
     }
 
     const users = await prisma.user.findMany({
@@ -296,6 +319,25 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
     }).sort((a, b) => b.xp - a.xp);
 
     res.json(ranking);
+}));
+
+// Enrollment Management
+app.get('/api/enrollments/pending', asyncHandler(async (req, res) => {
+    const { classId } = req.query;
+    const enrollments = await prisma.enrollment.findMany({
+        where: { classId: parseInt(classId), status: 'PENDING' },
+        include: { student: true }
+    });
+    res.json(enrollments);
+}));
+
+app.post('/api/enrollments/approve', asyncHandler(async (req, res) => {
+    const { enrollmentId, status } = req.body; // status: 'APPROVED' or 'REJECTED'
+    const enrollment = await prisma.enrollment.update({
+        where: { id: parseInt(enrollmentId) },
+        data: { status }
+    });
+    res.json(enrollment);
 }));
 
 // Profile upload

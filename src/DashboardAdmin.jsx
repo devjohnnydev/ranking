@@ -5,9 +5,10 @@ import * as XLSX from 'xlsx';
 
 const DashboardAdmin = () => {
     const {
-        logout, user, students = [], importStudents, activities = [],
+        logout, user, students = [], activities = [],
         addActivity, setStudentGrade, grades = {}, ranking = [],
-        classes = [], selectedClass, setSelectedClass, createClass, sendMessage
+        classes = [], selectedClass, setSelectedClass, createClass, sendMessage,
+        pendingEnrollments = [], approveEnrollment
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -158,7 +159,37 @@ const DashboardAdmin = () => {
 
                 {tab === 'students' && (
                     <div>
-                        <h3 style={{ marginBottom: '2rem' }}>Alunos Matriculados ({students.length})</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h3 style={{ margin: 0 }}>Alunos Matriculados ({students.length})</h3>
+                            {pendingEnrollments.length > 0 && (
+                                <span className="badge" style={{ background: 'var(--warning)', color: 'black' }}>
+                                    {pendingEnrollments.length} PENDENTES
+                                </span>
+                            )}
+                        </div>
+
+                        {pendingEnrollments.length > 0 && (
+                            <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                <h4 style={{ marginBottom: '1rem', color: 'var(--warning)' }}>Aprovações Pendentes</h4>
+                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                    {pendingEnrollments.map(e => (
+                                        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'var(--primary)' }}>
+                                                    {e.student.photoUrl ? <img src={e.student.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Users size={20} style={{ margin: '10px' }} />}
+                                                </div>
+                                                <span style={{ fontWeight: '700' }}>{e.student.name}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => approveEnrollment(e.id, 'APPROVED')} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>APROVAR</button>
+                                                <button onClick={() => approveEnrollment(e.id, 'REJECTED')} className="btn glass-card" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: '#ef4444' }}>RECUSAR</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.25rem' }}>
                             {students.map(s => (
                                 <div key={s.id} className="glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -167,11 +198,11 @@ const DashboardAdmin = () => {
                                     </div>
                                     <div>
                                         <p style={{ fontWeight: '800', fontSize: '0.95rem' }}>{s.name}</p>
-                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Status: On-line</p>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--success)' }}>Matriculado</p>
                                     </div>
                                 </div>
                             ))}
-                            {students.length === 0 && <p style={{ color: 'var(--text-muted)', gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>Nenhum aluno entrou na turma ainda.</p>}
+                            {students.length === 0 && pendingEnrollments.length === 0 && <p style={{ color: 'var(--text-muted)', gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>Nenhum aluno entrou na turma ainda.</p>}
                         </div>
                     </div>
                 )}

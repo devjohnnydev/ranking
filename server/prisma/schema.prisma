@@ -50,6 +50,7 @@ model Enrollment {
   studentId Int
   class     Class    @relation(fields: [classId], references: [id])
   classId   Int
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
   
   @@unique([studentId, classId])
 }

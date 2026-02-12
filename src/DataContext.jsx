@@ -11,7 +11,7 @@ export const useData = () => {
       registerStudent: async () => { }, createClass: async () => { },
       joinClass: async () => { }, addActivity: async () => { },
       setStudentGrade: async () => { }, sendMessage: async () => { },
-      updateProfile: async () => { }, refreshAll: () => { }
+      updateProfile: async () => { }, approveEnrollment: async () => { }, refreshAll: () => { }
     };
   }
   return context;
@@ -48,6 +48,7 @@ export const DataProvider = ({ children }) => {
   const [grades, setGrades] = useState({});
   const [ranking, setRanking] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
 
@@ -58,12 +59,14 @@ export const DataProvider = ({ children }) => {
         fetch(`${API_URL}/students?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/activities?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/grades?classId=${classId}`).then(r => r.json()),
-        fetch(`${API_URL}/ranking?classId=${classId}&username=${user.username}`).then(r => r.json())
+        fetch(`${API_URL}/ranking?classId=${classId}&username=${user.username}`).then(r => r.json()),
+        fetch(`${API_URL}/enrollments/pending?classId=${classId}`).then(r => r.json())
       ]);
 
       setStudents(Array.isArray(resStu) ? resStu : []);
       setActivities(Array.isArray(resAct) ? resAct : []);
       setRanking(Array.isArray(resRank) ? resRank : []);
+      setPendingEnrollments(Array.isArray(resPending) ? resPending : []);
 
       const gradeMap = {};
       if (Array.isArray(resGrades)) {
@@ -215,8 +218,14 @@ export const DataProvider = ({ children }) => {
       const u = await res.json();
       setUser(u);
     },
-    importStudents: async (list) => {
-      console.log('Import skip for now', list);
+    approveEnrollment: async (enrollmentId, status) => {
+      const res = await fetch(`${API_URL}/enrollments/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollmentId, status })
+      });
+      if (!res.ok) throw new Error("Falha ao processar solicitação");
+      setNeedsRefresh(true);
     },
     refreshAll: () => setNeedsRefresh(true)
   }), [user, loading, classes, selectedClass, students, activities, grades, ranking, messages, fetchClassData, refreshAll]);

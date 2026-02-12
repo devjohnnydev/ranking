@@ -30,6 +30,12 @@ const DashboardStudent = () => {
         return ranking.find(r => r.id === user.id) || { xp: 0, level: 1 };
     }, [ranking, user?.id]);
 
+    const isApproved = useMemo(() => {
+        if (!selectedClass || !user) return false;
+        // Search in ranking - if they are there, they are approved (as per backend logic)
+        return ranking.some(r => r.id === user.id);
+    }, [ranking, user?.id, selectedClass?.id]);
+
     const xp = myStats.xp || 0;
     const level = myStats.level || 1;
     const nextLevelXP = Math.pow(level, 2) * 100;
@@ -122,23 +128,31 @@ const DashboardStudent = () => {
                         <div>
                             <h3 style={{ marginBottom: '1.5rem', fontSize: '1.4rem' }}>Missões em {selectedClass?.name || '---'}</h3>
                             <div style={{ display: 'grid', gap: '1rem' }}>
-                                {activities.map(act => {
-                                    const grade = grades[`${user?.id}-${act.id}`];
-                                    return (
-                                        <div key={act.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', background: 'rgba(255,255,255,0.03)' }}>
-                                            <div>
-                                                <p style={{ fontSize: '1rem', fontWeight: '700' }}>{act.title}</p>
-                                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Missão Escolar</p>
+                                {isApproved ? (
+                                    activities.map(act => {
+                                        const grade = grades[`${user?.id}-${act.id}`];
+                                        return (
+                                            <div key={act.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', background: 'rgba(255,255,255,0.03)' }}>
+                                                <div>
+                                                    <p style={{ fontSize: '1rem', fontWeight: '700' }}>{act.title}</p>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{act.description || 'Missão Escolar'}</p>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <span className="badge" style={{ background: grade !== undefined ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)', color: grade !== undefined ? 'var(--success)' : 'var(--text-muted)' }}>
+                                                        {grade !== undefined ? `${grade} / ${act.maxScore}` : 'Pendente'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <span className="badge" style={{ background: grade !== undefined ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)', color: grade !== undefined ? 'var(--success)' : 'var(--text-muted)' }}>
-                                                    {grade !== undefined ? `${grade} / ${act.maxScore}` : 'Pendente'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {activities.length === 0 && (
+                                        );
+                                    })
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '16px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
+                                        <Award size={40} style={{ marginBottom: '1rem' }} />
+                                        <p style={{ fontWeight: '700' }}>Aguardando Aprovação do Mestre</p>
+                                        <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Você poderá ver as missões assim que for aprovado.</p>
+                                    </div>
+                                )}
+                                {isApproved && activities.length === 0 && (
                                     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
                                         Nenhuma missão disponível no momento.
                                     </div>
