@@ -160,6 +160,11 @@ app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
     const targetClass = await prisma.class.findUnique({ where: { joinCode } });
     if (!targetClass) return res.status(404).json({ error: "Código de turma inválido" });
 
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+    if (existingUser) {
+        return res.status(400).json({ error: "Este e-mail/usuário já está cadastrado" });
+    }
+
     const student = await prisma.user.create({
         data: { username, password, name, role: 'STUDENT', photoUrl }
     });
