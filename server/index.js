@@ -7,7 +7,23 @@ const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
+// CORS configuration for production and local dev
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    /\.railway\.app$/ // Allow all railway apps
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin))) {
+            callback(null, true);
+        } else {
+            callback(new Error('Origin not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 
 // Helper to wrap async routes
