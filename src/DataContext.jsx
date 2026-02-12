@@ -55,7 +55,7 @@ export const DataProvider = ({ children }) => {
   const fetchClassData = useCallback(async (classId) => {
     if (!classId || !user) return;
     try {
-      const [resStu, resAct, resGrades, resRank] = await Promise.all([
+      const [resStu, resAct, resGrades, resRank, resPending] = await Promise.all([
         fetch(`${API_URL}/students?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/activities?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/grades?classId=${classId}`).then(r => r.json()),
@@ -202,8 +202,16 @@ export const DataProvider = ({ children }) => {
     },
     addActivity: async (a) => {
       if (!selectedClass) return;
-      await fetch(`${API_URL}/activities`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...a, classId: selectedClass.id }) });
-      fetchClassData(selectedClass.id);
+      const res = await fetch(`${API_URL}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...a, classId: selectedClass.id })
+      });
+      const newAct = await res.json();
+      if (res.ok) {
+        setActivities(prev => [newAct, ...prev]);
+        fetchClassData(selectedClass.id);
+      }
     },
     setStudentGrade: async (s, act, score) => {
       await fetch(`${API_URL}/grades`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: s, activityId: act, score, teacherId: user.id }) });
