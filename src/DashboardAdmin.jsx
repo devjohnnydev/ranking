@@ -1,7 +1,54 @@
 import React, { useState } from 'react';
 import { useData } from './DataContext';
-import { Plus, Users, FileText, CheckCircle, LogOut, Award, BookOpen, Send, MessageSquare, ExternalLink } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, ChevronRight, BookOpen, Clock, Check, X, MessageSquare } from 'lucide-react';
 import * as XLSX from 'xlsx';
+
+const StudentGradeRow = ({ student, activities, grades, onSaveGrade }) => {
+    const [localGrades, setLocalGrades] = useState({});
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const promises = Object.entries(localGrades).map(([actId, score]) =>
+                onSaveGrade(student.id, parseInt(actId), score)
+            );
+            await Promise.all(promises);
+            setLocalGrades({});
+            alert(`Notas de ${student.name} salvas!`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <tr key={student.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{student.name}</td>
+            {activities.map(a => (
+                <td key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>
+                    <input
+                        type="number"
+                        className="input-field"
+                        style={{ width: '70px', textAlign: 'center', padding: '0.4rem' }}
+                        value={localGrades[a.id] !== undefined ? localGrades[a.id] : (grades[`${student.id}-${a.id}`] || '')}
+                        onChange={(e) => setLocalGrades({ ...localGrades, [a.id]: parseFloat(e.target.value) || 0 })}
+                        placeholder="0"
+                    />
+                </td>
+            ))}
+            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                <button
+                    className={`btn ${Object.keys(localGrades).length > 0 ? 'btn-primary' : 'glass-card'}`}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                    disabled={Object.keys(localGrades).length === 0 || saving}
+                    onClick={handleSave}
+                >
+                    {saving ? '...' : 'SALVAR'}
+                </button>
+            </td>
+        </tr>
+    );
+};
 
 const DashboardAdmin = () => {
     const {
@@ -27,6 +74,18 @@ const DashboardAdmin = () => {
             setShowNewClass(false);
         } catch (err) {
             alert('Falha ao criar turma');
+        }
+    };
+
+    const handleAddActivity = async (e) => {
+        e.preventDefault();
+        if (!selectedClass) return alert('Selecione uma turma primeiro');
+        try {
+            await addActivity({ ...newActivity, classId: selectedClass.id });
+            setNewActivity({ title: '', description: '', maxScore: 10 });
+            alert('Missão lançada com sucesso!');
+        } catch (err) {
+            alert('Falha ao lançar missão');
         }
     };
 
@@ -108,12 +167,12 @@ const DashboardAdmin = () => {
                 </div>
             )}
 
-            <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '130px' }}><Award size={18} /> Ranking</button>
-                <button onClick={() => setTab('students')} className={`btn ${tab === 'students' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '130px' }}><Users size={18} /> Alunos</button>
-                <button onClick={() => setTab('activities')} className={`btn ${tab === 'activities' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '130px' }}><FileText size={18} /> Missões</button>
-                <button onClick={() => setTab('grades')} className={`btn ${tab === 'grades' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '130px' }}><CheckCircle size={18} /> Notas</button>
-                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '130px' }}><MessageSquare size={18} /> Atas</button>
+            <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', overflowX: 'auto', paddingBottom: '0.5rem', flexWrap: 'nowrap' }}>
+                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Trophy size={18} /> Ranking</button>
+                <button onClick={() => setTab('students')} className={`btn ${tab === 'students' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Users size={18} /> Alunos</button>
+                <button onClick={() => setTab('missions')} className={`btn ${tab === 'missions' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Plus size={18} /> Missões</button>
+                <button onClick={() => setTab('grades')} className={`btn ${tab === 'grades' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Award size={18} /> Avaliação</button>
+                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Send size={18} /> Mensagens</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
@@ -207,40 +266,60 @@ const DashboardAdmin = () => {
                     </div>
                 )}
 
-                {tab === 'activities' && (
-                    <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                        <h3 style={{ marginBottom: '2rem' }}>Painel de Missões</h3>
-                        {selectedClass && (
-                            <div className="glass-card" style={{ padding: '2rem', marginBottom: '2.5rem', background: 'rgba(99, 102, 241, 0.05)' }}>
-                                <h4 style={{ marginBottom: '1.2rem' }}>Criar Nova Missão</h4>
-                                <form onSubmit={(e) => { e.preventDefault(); addActivity(newActivity); setNewActivity({ title: '', description: '', maxScore: 10 }); }} style={{ display: 'grid', gap: '1.2rem' }}>
-                                    <input className="input-field" placeholder="Título da Missão" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} required />
-                                    <textarea className="input-field" placeholder="Detalhamento da missão..." value={newActivity.description} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} style={{ height: '100px' }} />
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <span style={{ fontSize: '0.9rem' }}>Recompensa (Pontos):</span>
-                                        <input type="number" className="input-field" style={{ width: '100px' }} value={newActivity.maxScore || ''} onChange={e => setNewActivity({ ...newActivity, maxScore: parseFloat(e.target.value) || 0 })} />
-                                        <button className="btn btn-primary" type="submit" style={{ flex: 1 }}>LANÇAR MISSÃO</button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
+                {tab === 'missions' && (
+                    <div>
+                        <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem', background: 'rgba(99, 102, 241, 0.05)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Plus size={24} color="var(--primary)" /> Nova Missão para a Guilda
+                            </h3>
+                            <form onSubmit={handleAddActivity} style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) 2fr 100px 150px', gap: '1rem', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Título</label>
+                                    <input className="input-field" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Descrição (Opcional)</label>
+                                    <input className="input-field" value={newActivity.description} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Pontos</label>
+                                    <input type="number" className="input-field" value={newActivity.maxScore} onChange={e => setNewActivity({ ...newActivity, maxScore: parseFloat(e.target.value) || 0 })} required />
+                                </div>
+                                <button type="submit" className="btn btn-primary">LANÇAR MISSÃO</button>
+                            </form>
+                        </div>
+
+                        <h3 style={{ marginBottom: '1.5rem' }}>Missões Ativas ({activities.length})</h3>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             {activities.map(a => (
-                                <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
                                     <div>
-                                        <p style={{ fontWeight: '800' }}>{a.title}</p>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{a.desc || 'Sem descrição'}</p>
+                                        <h4 style={{ margin: 0, color: 'white' }}>{a.title}</h4>
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{a.description || 'Sem descrição'}</p>
                                     </div>
-                                    <span className="badge" style={{ background: 'rgba(236, 72, 153, 0.1)', color: 'var(--secondary)' }}>{a.maxScore} XP</span>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                                            <span>{a.maxScore} XP</span>
+                                        </div>
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(a.createdAt).toLocaleDateString()}</p>
+                                    </div>
                                 </div>
                             ))}
+                            {activities.length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--glass-border)', borderRadius: '16px' }}>
+                                    <p style={{ color: 'var(--text-muted)' }}>Nenhuma missão lançada ainda.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
 
                 {tab === 'grades' && (
                     <div style={{ overflowX: 'auto' }}>
-                        <h3 style={{ marginBottom: '2rem' }}>Gestão de Pontuação</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h3 style={{ margin: 0 }}>Lançamento de Notas</h3>
+                            <button className="badge" style={{ background: 'var(--success)', color: 'white', border: 'none' }}>TURMA ATIVA</button>
+                        </div>
                         {!selectedClass ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>Selecione uma turma para carregar as notas.</p> : (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
@@ -251,52 +330,15 @@ const DashboardAdmin = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {students.map(s => {
-                                        const [localGrades, setLocalGrades] = useState({});
-                                        const [saving, setSaving] = useState(false);
-
-                                        const handleSave = async () => {
-                                            setSaving(true);
-                                            try {
-                                                const promises = Object.entries(localGrades).map(([actId, score]) =>
-                                                    setStudentGrade(s.id, parseInt(actId), score)
-                                                );
-                                                await Promise.all(promises);
-                                                setLocalGrades({});
-                                                alert(`Notas de ${s.name} salvas!`);
-                                            } finally {
-                                                setSaving(false);
-                                            }
-                                        };
-
-                                        return (
-                                            <tr key={s.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{s.name}</td>
-                                                {activities.map(a => (
-                                                    <td key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>
-                                                        <input
-                                                            type="number"
-                                                            className="input-field"
-                                                            style={{ width: '70px', textAlign: 'center', padding: '0.4rem' }}
-                                                            value={localGrades[a.id] !== undefined ? localGrades[a.id] : (grades[`${s.id}-${a.id}`] || '')}
-                                                            onChange={(e) => setLocalGrades({ ...localGrades, [a.id]: parseFloat(e.target.value) || 0 })}
-                                                            placeholder="0"
-                                                        />
-                                                    </td>
-                                                ))}
-                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                    <button
-                                                        className={`btn ${Object.keys(localGrades).length > 0 ? 'btn-primary' : 'glass-card'}`}
-                                                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-                                                        disabled={Object.keys(localGrades).length === 0 || saving}
-                                                        onClick={handleSave}
-                                                    >
-                                                        {saving ? '...' : 'SALVAR'}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {students.map(s => (
+                                        <StudentGradeRow
+                                            key={s.id}
+                                            student={s}
+                                            activities={activities}
+                                            grades={grades}
+                                            onSaveGrade={setStudentGrade}
+                                        />
+                                    ))}
                                 </tbody>
                             </table>
                         )}
