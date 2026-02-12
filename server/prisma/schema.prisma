@@ -51,20 +51,22 @@ model Enrollment {
   class     Class    @relation(fields: [classId], references: [id])
   classId   Int
   status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
   
   @@unique([studentId, classId])
 }
 
 model Activity {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
   description String?
-  maxScore    Float   @default(10)
+  maxScore    Float    @default(10)
   
-  class       Class   @relation(fields: [classId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
   classId     Int
   
   grades      Grade[]
+  createdAt   DateTime @default(now())
 }
 
 model Grade {

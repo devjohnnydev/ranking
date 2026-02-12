@@ -78,7 +78,7 @@ export const DataProvider = ({ children }) => {
     } catch (e) {
       console.error("fetchClassData fail", e);
     }
-  }, [user?.username]);
+  }, [user?.username, user?.id]);
 
   const refreshAll = useCallback(async () => {
     if (!user || !user.id) return;
@@ -95,8 +95,13 @@ export const DataProvider = ({ children }) => {
       setClasses(classList);
       setMessages(Array.isArray(resMessages) ? resMessages : []);
 
-      if (classList.length > 0 && !selectedClass) {
-        setSelectedClass(classList[0]);
+      if (classList.length > 0) {
+        if (!selectedClass) {
+          setSelectedClass(classList[0]);
+        } else {
+          // If already selected, re-fetch data for it
+          fetchClassData(selectedClass.id);
+        }
       }
 
       if (user.role === 'ADMIN') {

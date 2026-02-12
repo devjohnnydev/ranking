@@ -229,7 +229,8 @@ app.get('/api/activities', asyncHandler(async (req, res) => {
     const { classId } = req.query;
     if (!classId || classId === 'undefined') return res.json([]);
     const activities = await prisma.activity.findMany({
-        where: { classId: parseInt(classId) }
+        where: { classId: parseInt(classId) },
+        orderBy: { createdAt: 'desc' }
     });
     res.json(activities);
 }));
@@ -324,6 +325,8 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
 // Enrollment Management
 app.get('/api/enrollments/pending', asyncHandler(async (req, res) => {
     const { classId } = req.query;
+    if (!classId || classId === 'undefined') return res.json([]);
+
     const enrollments = await prisma.enrollment.findMany({
         where: { classId: parseInt(classId), status: 'PENDING' },
         include: { student: true }
@@ -333,6 +336,8 @@ app.get('/api/enrollments/pending', asyncHandler(async (req, res) => {
 
 app.post('/api/enrollments/approve', asyncHandler(async (req, res) => {
     const { enrollmentId, status } = req.body; // status: 'APPROVED' or 'REJECTED'
+    if (!enrollmentId) return res.status(400).json({ error: "ID da matrícula não fornecido" });
+
     const enrollment = await prisma.enrollment.update({
         where: { id: parseInt(enrollmentId) },
         data: { status }
