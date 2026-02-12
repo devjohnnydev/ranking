@@ -14,7 +14,7 @@ const DashboardAdmin = () => {
     const [showNewClass, setShowNewClass] = useState(false);
     const [newClassName, setNewClassName] = useState('');
     const [newClassSubject, setNewClassSubject] = useState('');
-    const [newActivity, setNewActivity] = useState({ title: '', desc: '', maxScore: 10 });
+    const [newActivity, setNewActivity] = useState({ title: '', description: '', maxScore: 10 });
     const [msgContent, setMsgContent] = useState('');
 
     const handleCreateClass = async (e) => {
@@ -182,9 +182,9 @@ const DashboardAdmin = () => {
                         {selectedClass && (
                             <div className="glass-card" style={{ padding: '2rem', marginBottom: '2.5rem', background: 'rgba(99, 102, 241, 0.05)' }}>
                                 <h4 style={{ marginBottom: '1.2rem' }}>Criar Nova Missão</h4>
-                                <form onSubmit={(e) => { e.preventDefault(); addActivity(newActivity); setNewActivity({ title: '', desc: '', maxScore: 10 }); }} style={{ display: 'grid', gap: '1.2rem' }}>
+                                <form onSubmit={(e) => { e.preventDefault(); addActivity(newActivity); setNewActivity({ title: '', description: '', maxScore: 10 }); }} style={{ display: 'grid', gap: '1.2rem' }}>
                                     <input className="input-field" placeholder="Título da Missão" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} required />
-                                    <textarea className="input-field" placeholder="Detalhamento da missão..." value={newActivity.desc} onChange={e => setNewActivity({ ...newActivity, desc: e.target.value })} style={{ height: '100px' }} />
+                                    <textarea className="input-field" placeholder="Detalhamento da missão..." value={newActivity.description} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} style={{ height: '100px' }} />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <span style={{ fontSize: '0.9rem' }}>Recompensa (Pontos):</span>
                                         <input type="number" className="input-field" style={{ width: '100px' }} value={newActivity.maxScore || ''} onChange={e => setNewActivity({ ...newActivity, maxScore: parseFloat(e.target.value) || 0 })} />
@@ -216,26 +216,56 @@ const DashboardAdmin = () => {
                                     <tr style={{ borderBottom: '2px solid var(--glass-border)', textAlign: 'left' }}>
                                         <th style={{ padding: '1rem', minWidth: '180px' }}>ALUNO</th>
                                         {activities.map(a => <th key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>{a.title}</th>)}
+                                        <th style={{ padding: '1rem', textAlign: 'center' }}>AÇÃO</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {students.map(s => (
-                                        <tr key={s.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{s.name}</td>
-                                            {activities.map(a => (
-                                                <td key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>
-                                                    <input
-                                                        type="number"
-                                                        className="input-field"
-                                                        style={{ width: '70px', textAlign: 'center', padding: '0.4rem' }}
-                                                        value={grades[`${s.id}-${a.id}`] || ''}
-                                                        onChange={(e) => setStudentGrade(s.id, a.id, parseFloat(e.target.value) || 0)}
-                                                        placeholder="0"
-                                                    />
+                                    {students.map(s => {
+                                        const [localGrades, setLocalGrades] = useState({});
+                                        const [saving, setSaving] = useState(false);
+
+                                        const handleSave = async () => {
+                                            setSaving(true);
+                                            try {
+                                                const promises = Object.entries(localGrades).map(([actId, score]) =>
+                                                    setStudentGrade(s.id, parseInt(actId), score)
+                                                );
+                                                await Promise.all(promises);
+                                                setLocalGrades({});
+                                                alert(`Notas de ${s.name} salvas!`);
+                                            } finally {
+                                                setSaving(false);
+                                            }
+                                        };
+
+                                        return (
+                                            <tr key={s.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{s.name}</td>
+                                                {activities.map(a => (
+                                                    <td key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>
+                                                        <input
+                                                            type="number"
+                                                            className="input-field"
+                                                            style={{ width: '70px', textAlign: 'center', padding: '0.4rem' }}
+                                                            value={localGrades[a.id] !== undefined ? localGrades[a.id] : (grades[`${s.id}-${a.id}`] || '')}
+                                                            onChange={(e) => setLocalGrades({ ...localGrades, [a.id]: parseFloat(e.target.value) || 0 })}
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                ))}
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <button
+                                                        className={`btn ${Object.keys(localGrades).length > 0 ? 'btn-primary' : 'glass-card'}`}
+                                                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                                                        disabled={Object.keys(localGrades).length === 0 || saving}
+                                                        onClick={handleSave}
+                                                    >
+                                                        {saving ? '...' : 'SALVAR'}
+                                                    </button>
                                                 </td>
-                                            ))}
-                                        </tr>
-                                    ))}
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

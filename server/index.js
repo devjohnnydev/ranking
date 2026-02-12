@@ -218,11 +218,33 @@ app.get('/api/activities', asyncHandler(async (req, res) => {
     res.json(activities);
 }));
 
+app.get('/api/grades', asyncHandler(async (req, res) => {
+    const { classId } = req.query;
+    if (!classId || classId === 'undefined') return res.json([]);
+
+    // Fetch all activities for this class to get their IDs
+    const activities = await prisma.activity.findMany({
+        where: { classId: parseInt(classId) },
+        select: { id: true }
+    });
+    const activityIds = activities.map(a => a.id);
+
+    const grades = await prisma.grade.findMany({
+        where: { activityId: { in: activityIds } }
+    });
+    res.json(grades);
+}));
+
 app.post('/api/activities', asyncHandler(async (req, res) => {
-    const { title, description, maxScore, classId } = req.body;
+    const { title, description, desc, maxScore, classId } = req.body;
     if (!classId || classId === 'undefined') return res.status(400).json({ error: "ID da turma inválido" });
     const activity = await prisma.activity.create({
-        data: { title, description, maxScore: parseFloat(maxScore), classId: parseInt(classId) }
+        data: {
+            title,
+            description: description || desc || "",
+            maxScore: parseFloat(maxScore) || 10,
+            classId: parseInt(classId)
+        }
     });
     res.json(activity);
 }));
