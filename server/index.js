@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -25,6 +26,9 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
+
+// Serve static files from the frontend build
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Helper to wrap async routes
 const asyncHandler = fn => (req, res, next) => {
@@ -286,6 +290,11 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
     console.error(err);
     res.status(err.status || 500).json({ error: err.message || "Erro interno do servidor" });
+});
+
+// Serve frontend - Catch-all route
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
 app.listen(port, () => {

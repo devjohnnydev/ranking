@@ -133,11 +133,20 @@ export const DataProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response received:", text);
+        throw new Error(`Resposta inválida do servidor (HTML recebido em vez de JSON). Isso geralmente acontece se a URL da API estiver errada ou o servidor estiver fora do ar.`);
+      }
+
       const userData = await res.json();
       if (!res.ok) throw new Error(userData.error || 'Falha no login');
       setUser(userData);
       return true;
     } catch (e) {
+      console.error("Login Error:", e);
       alert(e.message);
       return false;
     } finally {
