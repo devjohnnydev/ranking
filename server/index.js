@@ -184,12 +184,14 @@ app.get('/api/students', asyncHandler(async (req, res) => {
 app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
     const { username, password, name, joinCode, photoUrl } = req.body;
     const normalizedCode = joinCode?.trim().toUpperCase();
-    console.log(`Registering student ${username} with joinCode: ${normalizedCode}`);
+    console.log(`[Register] Attempting: ${username} with code: ${normalizedCode}`);
+
+    if (!normalizedCode) return res.status(400).json({ error: "Código da turma é obrigatório" });
 
     const targetClass = await prisma.class.findUnique({ where: { joinCode: normalizedCode } });
     if (!targetClass) {
-        console.warn(`Registration failed: Class not found for code ${normalizedCode}`);
-        return res.status(404).json({ error: "Código de turma inválido" });
+        console.warn(`[Register] Failed: Class not found for code ${normalizedCode}`);
+        return res.status(404).json({ error: "Código de turma inválido ou não encontrado" });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { username } });
@@ -197,17 +199,26 @@ app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
         return res.status(400).json({ error: "Este e-mail/usuário já está cadastrado" });
     }
 
-    const student = await prisma.user.create({
-        data: { username, password, name, role: 'STUDENT', photoUrl }
+    // Use transaction to ensure both user and enrollment are created
+    const result = await prisma.$transaction(async (tx) => {
+        const student = await tx.user.create({
+            data: { username, password, name, role: 'STUDENT', photoUrl }
+        });
+
+        const enrollment = await tx.enrollment.create({
+            data: {
+                studentId: student.id,
+                classId: targetClass.id,
+                status: 'PENDING'
+            }
+        });
+
+        console.log(`[Register] Success: Student ${student.id} linked to class ${targetClass.id}`);
+        return student;
     });
-    await prisma.enrollment.create({
-        data: {
-            studentId: student.id,
-            classId: targetClass.id,
-            status: 'PENDING'
-        }
-    });
-    res.json(student);
+
+    const { password: _, ...userNoPass } = result;
+    res.json(userNoPass);
 }));
 
 // Messaging
