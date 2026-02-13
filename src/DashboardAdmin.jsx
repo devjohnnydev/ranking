@@ -256,14 +256,40 @@ const DashboardAdmin = () => {
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.25rem' }}>
                             {students.map(s => (
-                                <div key={s.id} className="glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{ width: '45px', height: '45px', borderRadius: '50%', overflow: 'hidden', background: 'var(--primary)' }}>
-                                        {s.photoUrl ? <img src={s.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Users size={20} style={{ margin: '12px' }} />}
+                                <div key={s.id} className="glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ width: '45px', height: '45px', borderRadius: '50%', overflow: 'hidden', background: 'var(--primary)' }}>
+                                            {s.photoUrl ? <img src={s.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Users size={20} style={{ margin: '12px' }} />}
+                                        </div>
+                                        <div>
+                                            <p style={{ fontWeight: '800', fontSize: '0.95rem' }}>{s.name}</p>
+                                            <p style={{ fontSize: '0.7rem', color: 'var(--success)' }}>Ativo</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p style={{ fontWeight: '800', fontSize: '0.95rem' }}>{s.name}</p>
-                                        <p style={{ fontSize: '0.7rem', color: 'var(--success)' }}>Matriculado</p>
-                                    </div>
+                                    <button 
+                                        onClick={async () => {
+                                            if(confirm(`Remover ${s.name} da turma?`)) {
+                                                try {
+                                                    // We need the enrollment ID. The API expects enrollmentId for approve/reject.
+                                                    // Since we don't have enrollmentId here directly in the student object, 
+                                                    // we'll need to find it or adjust the API. 
+                                                    // Actually, students lookup returns User objects.
+                                                    // Let's adjust the delete logic to use studentId and classId.
+                                                    const res = await fetch(`/api/enrollments/remove?studentId=${s.id}&classId=${selectedClass.id}`, { method: 'DELETE' });
+                                                    if (res.ok) {
+                                                        alert('Aluno removido');
+                                                        refreshAll();
+                                                    }
+                                                } catch (e) {
+                                                    alert('Erro ao remover');
+                                                }
+                                            }
+                                        }}
+                                        className="btn" 
+                                        style={{ padding: '0.4rem', color: '#ef4444' }}
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
                             ))}
                             {students.length === 0 && pendingEnrollments.length === 0 && <p style={{ color: 'var(--text-muted)', gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>Nenhum aluno entrou na turma ainda.</p>}

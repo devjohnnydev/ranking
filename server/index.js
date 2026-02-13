@@ -196,7 +196,7 @@ app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
             data: {
                 studentId: student.id,
                 classId: targetClass.id,
-                status: 'PENDING'
+                status: 'APPROVED'
             }
         });
 
@@ -371,6 +371,19 @@ app.post('/api/enrollments/approve', asyncHandler(async (req, res) => {
         data: { status }
     });
     res.json(enrollment);
+}));
+
+app.delete('/api/enrollments/remove', asyncHandler(async (req, res) => {
+    const { studentId, classId } = req.query;
+    await prisma.enrollment.delete({
+        where: {
+            studentId_classId: {
+                studentId: parseInt(studentId),
+                classId: parseInt(classId)
+            }
+        }
+    });
+    res.json({ message: "Aluno removido com sucesso" });
 }));
 
 // Profile upload
