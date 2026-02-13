@@ -1,8 +1,13 @@
-require('dotenv').config();
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const cors = require('cors');
-const path = require('path');
+import 'dotenv/config';
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const prisma = new PrismaClient();
@@ -114,7 +119,10 @@ app.get('/api/classes', asyncHandler(async (req, res) => {
             where: { studentId: parseInt(studentId) },
             include: { class: { include: { teacher: true } } }
         });
-        return res.json(enrollments.map(e => e.class));
+        return res.json(enrollments.map(e => ({
+            ...e.class,
+            enrollmentStatus: e.status
+        })));
     }
     res.json([]);
 }));
@@ -355,6 +363,11 @@ app.post('/api/enrollments/approve', asyncHandler(async (req, res) => {
     const { enrollmentId, status } = req.body; // status: 'APPROVED' or 'REJECTED'
     if (!enrollmentId) return res.status(400).json({ error: "ID da matrícula não fornecido" });
 
+    if (status === 'REJECTED') {
+        await prisma.enrollment.delete({ where: { id: parseInt(enrollmentId) } });
+        return res.json({ message: "Solicitação recusada e removida" });
+    }
+
     const enrollment = await prisma.enrollment.update({
         where: { id: parseInt(enrollmentId) },
         data: { status }
@@ -373,8 +386,8 @@ app.patch('/api/profile/:id', asyncHandler(async (req, res) => {
 }));
 
 // 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: "Rota não encontrada" });
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: "Rota da API não encontrada" });
 });
 
 // Global Error handler
@@ -384,10 +397,11 @@ app.use((err, req, res, next) => {
 });
 
 // Serve frontend - Catch-all route
-app.get(/.*/, (req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
 });
+

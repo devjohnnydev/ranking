@@ -20,7 +20,7 @@ const Login = () => {
                 await login(formData.username, formData.password);
             } else {
                 await registerStudent(formData);
-                alert('Cadastro realizado com sucesso! Bem-vindo à guilda.');
+                alert('Inscrição enviada para a Guilda! Aguarde a aprovação do seu mestre para começar as missões.');
             }
         } catch (e) {
             alert(e.message);

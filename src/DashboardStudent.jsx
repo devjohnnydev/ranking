@@ -19,7 +19,7 @@ const DashboardStudent = () => {
             await joinClass(joinCode);
             setJoinCode('');
             setShowJoin(false);
-            alert('Parabéns! Você agora faz parte de uma nova guilda.');
+            // Alert is already handled inside joinClass or by the feedback UI
         } catch (err) {
             alert(err.message || 'Falha ao entrar na turma');
         }
@@ -32,9 +32,9 @@ const DashboardStudent = () => {
 
     const isApproved = useMemo(() => {
         if (!selectedClass || !user) return false;
-        // Search in ranking - if they are there, they are approved (as per backend logic)
-        return ranking.some(r => r.id === user.id);
-    }, [ranking, user?.id, selectedClass?.id]);
+        // Check the status directly from the class object returned by the server
+        return selectedClass.enrollmentStatus === 'APPROVED';
+    }, [user?.id, selectedClass?.id, selectedClass?.enrollmentStatus]);
 
     const xp = myStats.xp || 0;
     const level = myStats.level || 1;
