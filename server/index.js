@@ -307,32 +307,10 @@ app.post('/api/grades', asyncHandler(async (req, res) => {
 }));
 
 // Rankings
-const { classId, username } = req.query;
-
-const where = { role: 'STUDENT' };
-if (!isJohnny(username) && classId && classId !== 'undefined') {
-    where.enrollments = {
-        some: {
-            classId: parseInt(classId),
-            status: 'APPROVED'
-        }
-    };
-}
-
-const users = await prisma.user.findMany({
-    where,
-    include: { grades: true, enrollments: { include: { class: true } } }
-});
-
-const ranking = users.map(u => {
-    const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
-    return {
-        id: u.id,
-        name: u.name,
-        photoUrl: u.photoUrl,
-        xp: totalXP,
+photoUrl: u.photoUrl,
+    xp: totalXP,
         level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
-        classes: u.enrollments.map(e => e.class.name)
+            classes: u.enrollments.map(e => e.class.name)
     };
 }).sort((a, b) => b.xp - a.xp);
 
