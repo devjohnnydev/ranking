@@ -266,16 +266,24 @@ app.get('/api/grades', asyncHandler(async (req, res) => {
 
 app.post('/api/activities', asyncHandler(async (req, res) => {
     const { title, description, desc, maxScore, classId } = req.body;
+    console.log(`Mission creation attempt for class ${classId}: ${title}`);
     if (!classId || classId === 'undefined') return res.status(400).json({ error: "ID da turma inválido" });
-    const activity = await prisma.activity.create({
-        data: {
-            title,
-            description: description || desc || "",
-            maxScore: parseFloat(maxScore) || 10,
-            classId: parseInt(classId)
-        }
-    });
-    res.json(activity);
+
+    try {
+        const activity = await prisma.activity.create({
+            data: {
+                title,
+                description: description || desc || "",
+                maxScore: parseFloat(maxScore) || 10,
+                classId: parseInt(classId)
+            }
+        });
+        console.log(`Mission created successfully: ${activity.id}`);
+        res.json(activity);
+    } catch (err) {
+        console.error("Error creating mission:", err);
+        res.status(500).json({ error: "Falha ao criar missão no banco de dados" });
+    }
 }));
 
 app.post('/api/grades', asyncHandler(async (req, res) => {
@@ -299,39 +307,36 @@ app.post('/api/grades', asyncHandler(async (req, res) => {
 }));
 
 // Rankings
-app.get('/api/ranking', asyncHandler(async (req, res) => {
-    const { classId, username } = req.query;
+const { classId, username } = req.query;
 
-    let userQuery = { role: 'STUDENT' };
-    if (!isJohnny(username) && classId && classId !== 'undefined') {
-        userQuery = {
-            enrollments: {
-                some: {
-                    classId: parseInt(classId),
-                    status: 'APPROVED'
-                }
-            }
-        };
-    }
+const where = { role: 'STUDENT' };
+if (!isJohnny(username) && classId && classId !== 'undefined') {
+    where.enrollments = {
+        some: {
+            classId: parseInt(classId),
+            status: 'APPROVED'
+        }
+    };
+}
 
-    const users = await prisma.user.findMany({
-        where: userQuery,
-        include: { grades: true, enrollments: { include: { class: true } } }
-    });
+const users = await prisma.user.findMany({
+    where,
+    include: { grades: true, enrollments: { include: { class: true } } }
+});
 
-    const ranking = users.map(u => {
-        const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
-        return {
-            id: u.id,
-            name: u.name,
-            photoUrl: u.photoUrl,
-            xp: totalXP,
-            level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
-            classes: u.enrollments.map(e => e.class.name)
-        };
-    }).sort((a, b) => b.xp - a.xp);
+const ranking = users.map(u => {
+    const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
+    return {
+        id: u.id,
+        name: u.name,
+        photoUrl: u.photoUrl,
+        xp: totalXP,
+        level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
+        classes: u.enrollments.map(e => e.class.name)
+    };
+}).sort((a, b) => b.xp - a.xp);
 
-    res.json(ranking);
+res.json(ranking);
 }));
 
 // Enrollment Management
