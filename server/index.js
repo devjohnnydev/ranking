@@ -386,7 +386,7 @@ app.patch('/api/profile/:id', asyncHandler(async (req, res) => {
 }));
 
 // 404 handler
-app.use('/api/:path*', (req, res) => {
+app.use(/\/api\/.*/, (req, res) => {
     res.status(404).json({ error: "Rota da API não encontrada" });
 });
 
@@ -397,7 +397,7 @@ app.use((err, req, res, next) => {
 });
 
 // Serve frontend - Catch-all route
-app.get('/:path*', (req, res) => {
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
