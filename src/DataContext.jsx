@@ -202,8 +202,12 @@ export const DataProvider = ({ children }) => {
     joinClass: async (joinCode) => {
       const res = await fetch(`${API_URL}/classes/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: user.id, joinCode }) });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
+      if (!res.ok) {
+        alert(`Erro ao entrar na sala: ${result.error || 'Erro desconhecido'}`);
+        throw new Error(result.error);
+      }
       setNeedsRefresh(true);
+      alert('Solicitação enviada! Aguarde a aprovação do mestre.');
     },
     addActivity: async (a) => {
       if (!selectedClass) return;
@@ -214,8 +218,10 @@ export const DataProvider = ({ children }) => {
       });
       const newAct = await res.json();
       if (res.ok) {
-        setActivities(prev => [newAct, ...prev]);
+        setActivities(prev => Array.isArray(prev) ? [newAct, ...prev] : [newAct]);
         fetchClassData(selectedClass.id);
+      } else {
+        alert(`Erro ao lançar missão: ${newAct.error || 'Erro desconhecido'}`);
       }
     },
     setStudentGrade: async (s, act, score) => {

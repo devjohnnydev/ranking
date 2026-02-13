@@ -132,8 +132,14 @@ app.post('/api/classes', asyncHandler(async (req, res) => {
 
 app.post('/api/classes/join', asyncHandler(async (req, res) => {
     const { studentId, joinCode } = req.body;
-    const targetClass = await prisma.class.findUnique({ where: { joinCode } });
-    if (!targetClass) return res.status(404).json({ error: "Código de turma inválido" });
+    const normalizedCode = joinCode?.trim().toUpperCase();
+    console.log(`Attempting join for student ${studentId} with code: ${normalizedCode}`);
+
+    const targetClass = await prisma.class.findUnique({ where: { joinCode: normalizedCode } });
+    if (!targetClass) {
+        console.warn(`Join failed: Class not found for code ${normalizedCode}`);
+        return res.status(404).json({ error: "Código de turma inválido" });
+    }
 
     const enrollment = await prisma.enrollment.upsert({
         where: { studentId_classId: { studentId: parseInt(studentId), classId: targetClass.id } },
@@ -169,8 +175,14 @@ app.get('/api/students', asyncHandler(async (req, res) => {
 // Student self-registration with code
 app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
     const { username, password, name, joinCode, photoUrl } = req.body;
-    const targetClass = await prisma.class.findUnique({ where: { joinCode } });
-    if (!targetClass) return res.status(404).json({ error: "Código de turma inválido" });
+    const normalizedCode = joinCode?.trim().toUpperCase();
+    console.log(`Registering student ${username} with joinCode: ${normalizedCode}`);
+
+    const targetClass = await prisma.class.findUnique({ where: { joinCode: normalizedCode } });
+    if (!targetClass) {
+        console.warn(`Registration failed: Class not found for code ${normalizedCode}`);
+        return res.status(404).json({ error: "Código de turma inválido" });
+    }
 
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
