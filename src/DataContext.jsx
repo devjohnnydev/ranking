@@ -99,7 +99,6 @@ export const DataProvider = ({ children }) => {
         if (!selectedClass) {
           setSelectedClass(classList[0]);
         } else {
-          // If already selected, re-fetch data for it
           fetchClassData(selectedClass.id);
         }
       }

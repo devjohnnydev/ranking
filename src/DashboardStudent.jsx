@@ -33,7 +33,8 @@ const DashboardStudent = () => {
     const isApproved = useMemo(() => {
         if (!selectedClass || !user) return false;
         // Check the status directly from the class object returned by the server
-        return selectedClass.enrollmentStatus === 'APPROVED';
+        // If enrollmentStatus is undefined but we have the class, it might be auto-approved
+        return selectedClass.enrollmentStatus === 'APPROVED' || selectedClass.enrollmentStatus === undefined;
     }, [user?.id, selectedClass?.id, selectedClass?.enrollmentStatus]);
 
     const xp = myStats.xp || 0;
