@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, Plus, BookOpen, ChevronRight } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, Plus, BookOpen, ChevronRight, RefreshCw } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
         user, logout, activities = [], grades = {}, ranking = [],
-        messages = [], classes = [], selectedClass, setSelectedClass, joinClass, loading
+        messages = [], classes = [], selectedClass, setSelectedClass, joinClass, loading, refreshAll
     } = useData();
 
     const [tab, setTab] = useState('status');
@@ -77,6 +77,9 @@ const DashboardStudent = () => {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button onClick={refreshAll} className="btn glass-card" disabled={loading} style={{ padding: '0.8rem' }}>
+                        <RefreshCw size={18} className={loading ? 'spin' : ''} />
+                    </button>
                     <button onClick={() => setShowJoin(true)} className="btn btn-secondary">
                         <Plus size={18} /> Nova Guilda
                     </button>

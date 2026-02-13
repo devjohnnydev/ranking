@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, ChevronRight, BookOpen, Clock, Check, X, MessageSquare } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, ChevronRight, BookOpen, Clock, Check, X, MessageSquare, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const StudentGradeRow = ({ student, activities, grades, onSaveGrade }) => {
@@ -55,7 +55,7 @@ const DashboardAdmin = () => {
         logout, user, students = [], activities = [],
         addActivity, setStudentGrade, grades = {}, ranking = [],
         classes = [], selectedClass, setSelectedClass, createClass, sendMessage,
-        pendingEnrollments = [], approveEnrollment
+        pendingEnrollments = [], approveEnrollment, refreshAll, loading
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -127,9 +127,14 @@ const DashboardAdmin = () => {
                         </button>
                     </div>
                 </div>
-                <button onClick={logout} className="btn glass-card" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                    Sair <LogOut size={18} />
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button onClick={refreshAll} className="btn glass-card" disabled={loading} style={{ padding: '0.8rem' }}>
+                        <RefreshCw size={18} className={loading ? 'spin' : ''} />
+                    </button>
+                    <button onClick={logout} className="btn glass-card" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.8rem' }}>
+                        <LogOut size={18} />
+                    </button>
+                </div>
             </header>
 
             {showNewClass && (
