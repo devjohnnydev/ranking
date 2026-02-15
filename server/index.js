@@ -156,15 +156,17 @@ app.get('/api/students', asyncHandler(async (req, res) => {
     const where = { classId: parseInt(classId) };
     if (status) {
         where.status = status;
-    } else {
-        where.status = 'APPROVED'; // Default to approved only
     }
 
     const enrollments = await prisma.enrollment.findMany({
         where,
         include: { student: true }
     });
-    res.json(enrollments.map(e => e.student));
+    res.json(enrollments.map(e => ({
+        ...e.student,
+        enrollmentStatus: e.status,
+        enrollmentId: e.id
+    })));
 }));
 
 // Student self-registration with code
@@ -246,8 +248,11 @@ app.get('/api/messages', asyncHandler(async (req, res) => {
 app.get('/api/missions', asyncHandler(async (req, res) => {
     const { classId, teacherId } = req.query;
     const where = {};
-    if (classId && classId !== 'undefined') where.classId = parseInt(classId);
-    if (teacherId && teacherId !== 'undefined') where.teacherId = parseInt(teacherId);
+    if (classId && classId !== 'undefined') {
+        where.classId = parseInt(classId);
+    } else if (teacherId && teacherId !== 'undefined') {
+        where.teacherId = parseInt(teacherId);
+    }
     
     const missions = await prisma.mission.findMany({
         where,
@@ -447,4 +452,3 @@ app.get(/.*/, (req, res) => {
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
 });
-

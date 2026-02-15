@@ -6,10 +6,10 @@ export const useData = () => {
   const context = useContext(DataContextInternal);
   if (!context) {
     return {
-      user: null, loading: false, classes: [], students: [], activities: [],
+      user: null, loading: false, classes: [], students: [], activities: [], missions: [],
       messages: [], ranking: [], login: async () => false, logout: () => { },
       registerStudent: async () => { }, createClass: async () => { },
-      joinClass: async () => { }, addActivity: async () => { },
+      joinClass: async () => { }, addActivity: async () => { }, addMission: async () => { },
       setStudentGrade: async () => { }, sendMessage: async () => { },
       updateProfile: async () => { }, approveEnrollment: async () => { }, refreshAll: () => { }
     };
@@ -25,7 +25,6 @@ export const DataProvider = ({ children }) => {
       const saved = localStorage.getItem('eduGameUser');
       if (!saved) return null;
       const parsed = JSON.parse(saved);
-      // Ensure basic structure exists
       if (parsed && typeof parsed === 'object' && parsed.id) {
         return {
           id: parsed.id,
@@ -55,7 +54,8 @@ export const DataProvider = ({ children }) => {
 
   const fetchClassData = useCallback(async (classId) => {
     if (!classId || !user) return;
-    const [resStu, resAct, resMissions, resGrades, resRank, resPending] = await Promise.all([
+    try {
+      const [resStu, resAct, resMissions, resGrades, resRank, resPending] = await Promise.all([
         fetch(`${API_URL}/students?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/activities?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/missions?classId=${classId}`).then(r => r.json()),
@@ -80,7 +80,7 @@ export const DataProvider = ({ children }) => {
     } catch (e) {
       console.error("fetchClassData fail", e);
     }
-  }, [user?.username, user?.id]);
+  }, [user?.username]);
 
   const refreshAll = useCallback(async () => {
     if (!user || !user.id) return;
@@ -115,13 +115,11 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
       setNeedsRefresh(false);
     }
-  }, [user?.id, user?.username, user?.role, selectedClass?.id]);
+  }, [user?.id, user?.username, user?.role, selectedClass?.id, fetchClassData]);
 
   useEffect(() => {
     if (user) {
       try {
-        // Only save essential data to localStorage to avoid QuotaExceededError
-        // Base64 photos are the main cause of large storage usage
         const userToSave = { ...user };
         if (userToSave.photoUrl && userToSave.photoUrl.startsWith('data:')) {
           delete userToSave.photoUrl;
@@ -157,7 +155,7 @@ export const DataProvider = ({ children }) => {
       if (!contentType || !contentType.includes("application/json")) {
         const text = await res.text();
         console.error("Non-JSON response received:", text);
-        throw new Error(`Resposta inválida do servidor (HTML recebido em vez de JSON). Isso geralmente acontece se a URL da API estiver errada ou o servidor estiver fora do ar.`);
+        throw new Error(`Resposta inválida do servidor (HTML recebido em vez de JSON).`);
       }
 
       const userData = await res.json();
@@ -179,13 +177,14 @@ export const DataProvider = ({ children }) => {
     setSelectedClass(null);
     setStudents([]);
     setActivities([]);
+    setMissions([]);
     setMessages([]);
     setNeedsRefresh(false);
   };
 
   const value = useMemo(() => ({
     user, login, logout, loading,
-    classes, selectedClass, setSelectedClass,
+    classes, selectedClass, setSelectedClass, missions, students, activities, grades, ranking, messages, pendingEnrollments,
     registerStudent: async (data) => {
       const res = await fetch(`${API_URL}/auth/register-student`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       const result = await res.json();
@@ -210,6 +209,21 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
       alert('Solicitação enviada! Aguarde a aprovação do mestre.');
     },
+    addMission: async (m) => {
+      if (!selectedClass) return;
+      const res = await fetch(`${API_URL}/missions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...m, teacherId: user.id, classId: selectedClass.id })
+      });
+      const newMission = await res.json();
+      if (res.ok) {
+        setMissions(prev => Array.isArray(prev) ? [newMission, ...prev] : [newMission]);
+        fetchClassData(selectedClass.id);
+      } else {
+        alert(`Erro ao lançar missão: ${newMission.error || 'Erro desconhecido'}`);
+      }
+    },
     addActivity: async (a) => {
       if (!selectedClass) return;
       const res = await fetch(`${API_URL}/activities`, {
@@ -228,13 +242,11 @@ export const DataProvider = ({ children }) => {
     setStudentGrade: async (s, act, score) => {
       await fetch(`${API_URL}/grades`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: s, activityId: act, score, teacherId: user.id }) });
       setGrades(prev => ({ ...prev, [`${s}-${act}`]: score }));
-      // Refresh ranking to show updated XP
       if (selectedClass) {
         const resRank = await fetch(`${API_URL}/ranking?classId=${selectedClass.id}&username=${user.username}`).then(r => r.json());
         setRanking(Array.isArray(resRank) ? resRank : []);
       }
     },
-    ranking, messages,
     sendMessage: async (m) => {
       await fetch(`${API_URL}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...m, fromId: user.id }) });
     },
@@ -253,7 +265,7 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
     },
     refreshAll: () => setNeedsRefresh(true)
-  }), [user, loading, classes, selectedClass, students, activities, grades, ranking, messages, fetchClassData, refreshAll]);
+  }), [user, loading, classes, selectedClass, students, activities, missions, grades, ranking, messages, pendingEnrollments, fetchClassData, refreshAll]);
 
   return (
     <DataContextInternal.Provider value={value}>
