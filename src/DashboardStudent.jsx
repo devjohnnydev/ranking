@@ -59,8 +59,9 @@ const DashboardStudent = () => {
                         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
                             PlayGame
                         </h2>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold', marginBottom: '0.5rem' }}>By Prof. Johnny Braga de Oliveira</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>By Prof. Johnny Braga de Oliveira</p>
+                        {selectedClass?.teacher?.quote && <p style={{ fontSize: '0.7rem', fontStyle: 'italic', color: 'var(--primary)', marginTop: '0.2rem', maxWidth: '200px' }}>"{selectedClass.teacher.quote}"</p>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--glass-border)', marginTop: '0.5rem' }}>
                             <BookOpen size={14} color="var(--primary)" />
                             <select
                                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', outline: 'none', fontWeight: '600' }}
@@ -85,7 +86,7 @@ const DashboardStudent = () => {
                     <button onClick={() => setShowJoin(true)} className="btn btn-secondary">
                         <Plus size={18} /> Nova Guilda
                     </button>
-                    <button onClick={logout} className="btn glass-card" style={{ padding: '0.8rem' }}>
+                    <button onClick={logout} className="btn btn-logout">
                         <LogOut size={18} />
                     </button>
                 </div>

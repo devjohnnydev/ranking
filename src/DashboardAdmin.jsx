@@ -55,7 +55,7 @@ const DashboardAdmin = () => {
         logout, user, students = [], activities = [], missions = [],
         addActivity, addMission, setStudentGrade, grades = {}, ranking = [],
         classes = [], selectedClass, setSelectedClass, createClass, sendMessage,
-        pendingEnrollments = [], approveEnrollment, refreshAll, loading
+        pendingEnrollments = [], approveEnrollment, refreshAll, loading, updateProfile
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -113,44 +113,105 @@ const DashboardAdmin = () => {
         }
     };
 
+    const [showProfileEdit, setShowProfileEdit] = useState(false);
+    const [profileData, setProfileData] = useState({
+        name: user?.name || '',
+        bio: user?.bio || '',
+        quote: user?.quote || '',
+        photoUrl: user?.photoUrl || ''
+    });
+
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        try {
+            await updateProfile(profileData);
+            setShowProfileEdit(false);
+            alert('Perfil atualizado com sucesso!');
+        } catch (err) {
+            alert('Erro ao atualizar perfil');
+        }
+    };
+
     return (
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.8rem', color: 'var(--primary)', textTransform: 'uppercase' }}>PlayGame</h1>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
-                    <h2 style={{ fontSize: '1.2rem', color: 'var(--secondary)', marginTop: '0.5rem' }}>Mestre {user?.name || user?.username}</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.8rem' }}>
-                        <div className="glass-card" style={{ padding: '0.6rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <BookOpen size={18} color="var(--primary)" />
-                            <select
-                                style={{ background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '0.9rem' }}
-                                value={selectedClass?.id || ''}
-                                onChange={(e) => {
-                                    const id = parseInt(e.target.value);
-                                    const found = classes.find(c => c.id === id);
-                                    if (found) setSelectedClass(found);
-                                }}
-                            >
-                                <option value="" disabled>Selecione uma turma</option>
-                                {classes.map(c => <option key={c.id} value={c.id} style={{ color: 'black' }}>{c.name} - {c.subject}</option>)}
-                                {classes.length === 0 && <option value="">Nenhuma turma disponível</option>}
-                            </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div 
+                        onClick={() => setShowProfileEdit(true)}
+                        style={{ position: 'relative', cursor: 'pointer' }}
+                    >
+                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 20px rgba(255, 232, 31, 0.3)' }}>
+                            {user?.photoUrl ? <img src={user.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Users size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
                         </div>
-                        <button onClick={() => setShowNewClass(true)} className="btn btn-secondary" style={{ height: '42px' }}>
-                            <Plus size={18} /> Turma
-                        </button>
+                        <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: 'var(--primary)', color: 'black', padding: '4px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                            EDIT
+                        </div>
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '1.8rem', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>PlayGame</h1>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>By Prof. Johnny Braga de Oliveira</p>
+                        <h2 style={{ fontSize: '1.2rem', color: 'var(--secondary)', marginTop: '0.5rem' }}>Mestre {user?.name || user?.username}</h2>
+                        {user?.quote && <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--primary)', marginTop: '0.2rem' }}>"{user.quote}"</p>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.8rem' }}>
+                            <div className="glass-card" style={{ padding: '0.6rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <BookOpen size={18} color="var(--primary)" />
+                                <select
+                                    style={{ background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '0.9rem' }}
+                                    value={selectedClass?.id || ''}
+                                    onChange={(e) => {
+                                        const id = parseInt(e.target.value);
+                                        const found = classes.find(c => c.id === id);
+                                        if (found) setSelectedClass(found);
+                                    }}
+                                >
+                                    <option value="" disabled>Selecione uma turma</option>
+                                    {classes.map(c => <option key={c.id} value={c.id} style={{ color: 'black' }}>{c.name} - {c.subject}</option>)}
+                                    {classes.length === 0 && <option value="">Nenhuma turma disponível</option>}
+                                </select>
+                            </div>
+                            <button onClick={() => setShowNewClass(true)} className="btn btn-secondary" style={{ height: '42px' }}>
+                                <Plus size={18} /> Turma
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button onClick={refreshAll} className="btn glass-card" disabled={loading} style={{ padding: '0.8rem' }}>
                         <RefreshCw size={18} className={loading ? 'spin' : ''} />
                     </button>
-                    <button onClick={logout} className="btn glass-card" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.8rem' }}>
+                    <button onClick={logout} className="btn btn-logout">
                         <LogOut size={18} />
                     </button>
                 </div>
             </header>
+
+            {showProfileEdit && (
+                <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto' }}>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Editar Perfil do Mestre</h3>
+                    <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '1.2rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Nome Público</label>
+                            <input className="input-field" value={profileData.name} onChange={e => setProfileData({ ...profileData, name: e.target.value })} required />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>URL da Foto (Avatar)</label>
+                            <input className="input-field" value={profileData.photoUrl} onChange={e => setProfileData({ ...profileData, photoUrl: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Frase de Efeito (Quote)</label>
+                            <input className="input-field" value={profileData.quote} onChange={e => setProfileData({ ...profileData, quote: e.target.value })} placeholder="Uma frase inspiradora..." />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Bio / História</label>
+                            <textarea className="input-field" value={profileData.bio} onChange={e => setProfileData({ ...profileData, bio: e.target.value })} style={{ minHeight: '100px' }} placeholder="Conte um pouco sobre sua jornada..." />
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>SALVAR PERFIL</button>
+                            <button type="button" onClick={() => setShowProfileEdit(false)} className="btn glass-card" style={{ flex: 1 }}>CANCELAR</button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {showNewClass && (
                 <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '3rem', maxWidth: '500px' }}>
@@ -285,11 +346,6 @@ const DashboardAdmin = () => {
                                         onClick={async () => {
                                             if(confirm(`Remover ${s.name} da turma?`)) {
                                                 try {
-                                                    // We need the enrollment ID. The API expects enrollmentId for approve/reject.
-                                                    // Since we don't have enrollmentId here directly in the student object, 
-                                                    // we'll need to find it or adjust the API. 
-                                                    // Actually, students lookup returns User objects.
-                                                    // Let's adjust the delete logic to use studentId and classId.
                                                     const res = await fetch(`/api/enrollments/remove?studentId=${s.id}&classId=${selectedClass.id}`, { method: 'DELETE' });
                                                     if (res.ok) {
                                                         alert('Aluno removido');
@@ -359,55 +415,49 @@ const DashboardAdmin = () => {
                         <h3 style={{ marginBottom: '1.5rem' }}>Missões de Classe Ativas ({missions.length})</h3>
                         <div style={{ display: 'grid', gap: '1rem', marginBottom: '3rem' }}>
                             {missions.map(m => (
-                                <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,232,31,0.05)', borderLeft: '4px solid var(--primary)' }}>
+                                <div key={m.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255, 232, 31, 0.03)', borderLeft: '4px solid var(--primary)' }}>
                                     <div>
-                                        <h4 style={{ margin: 0, color: '#FFFFFF' }}>{m.title}</h4>
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#E0E0E0' }}>{m.description}</p>
+                                        <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>{m.title}</p>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{m.description}</p>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{m.reward} XP</div>
+                                        <p style={{ fontWeight: '900', color: 'var(--primary)', fontSize: '1.2rem' }}>{m.reward} XP</p>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>RECOMPENSA</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <h3 style={{ marginBottom: '1.5rem' }}>Atividades Avaliadas ({activities.length})</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>Itens de Avaliação Ativos ({activities.length})</h3>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             {activities.map(a => (
-                                <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                                <div key={a.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
                                     <div>
-                                        <h4 style={{ margin: 0, color: 'white' }}>{a.title}</h4>
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#E0E0E0' }}>{a.description || 'Sem descrição'}</p>
+                                        <p style={{ fontWeight: '800' }}>{a.title}</p>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{a.description}</p>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                            <span>{a.maxScore} XP</span>
-                                        </div>
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.7rem', color: '#E0E0E0' }}>{new Date(a.createdAt).toLocaleDateString()}</p>
+                                        <p style={{ fontWeight: '900', color: 'var(--secondary)' }}>{a.maxScore} PONTOS</p>
                                     </div>
                                 </div>
                             ))}
-                            {activities.length === 0 && missions.length === 0 && (
-                                <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--glass-border)', borderRadius: '16px' }}>
-                                    <p style={{ color: 'var(--text-muted)' }}>Nenhuma missão ou atividade lançada ainda.</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
 
                 {tab === 'grades' && (
-                    <div style={{ overflowX: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                            <h3 style={{ margin: 0 }}>Lançamento de Notas</h3>
-                            <button className="badge" style={{ background: 'var(--success)', color: 'white', border: 'none' }}>TURMA ATIVA</button>
-                        </div>
-                        {!selectedClass ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>Selecione uma turma para carregar as notas.</p> : (
+                    <div>
+                        <h3 style={{ marginBottom: '2rem' }}>Diário de Notas: {selectedClass?.name}</h3>
+                        <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr style={{ borderBottom: '2px solid var(--glass-border)', textAlign: 'left' }}>
-                                        <th style={{ padding: '1rem', minWidth: '180px' }}>ALUNO</th>
-                                        {activities.map(a => <th key={a.id} style={{ padding: '1rem', textAlign: 'center' }}>{a.title}</th>)}
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                        <th style={{ padding: '1rem', textAlign: 'left' }}>ALUNO</th>
+                                        {activities.map(a => (
+                                            <th key={a.id} style={{ padding: '1rem', textAlign: 'center', fontSize: '0.7rem', maxWidth: '80px' }}>
+                                                {a.title.substring(0, 10)}...
+                                            </th>
+                                        ))}
                                         <th style={{ padding: '1rem', textAlign: 'center' }}>AÇÃO</th>
                                     </tr>
                                 </thead>
@@ -423,32 +473,30 @@ const DashboardAdmin = () => {
                                     ))}
                                 </tbody>
                             </table>
-                        )}
+                            {students.length === 0 && <p style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhum aluno para avaliar.</p>}
+                        </div>
                     </div>
                 )}
 
                 {tab === 'messages' && (
                     <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                        <h3 style={{ marginBottom: '2rem' }}>Comunicados e Atas</h3>
-                        {!selectedClass ? <p>Selecione uma turma para emitir ordens.</p> : (
-                            <div>
-                                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2.5rem' }}>
-                                    <textarea
-                                        className="input-field"
-                                        placeholder="Escreva sua ordem ou aviso para todos os alunos..."
-                                        value={msgContent}
-                                        onChange={e => setMsgContent(e.target.value)}
-                                        style={{ height: '140px', marginBottom: '1.2rem' }}
-                                    />
-                                    <button className="btn btn-primary" onClick={sendClassMessage} style={{ width: '100%' }}>
-                                        <Send size={18} /> PUBLICAR NO MURAL
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <h3 style={{ marginBottom: '2rem' }}>Mural da Guilda ({selectedClass?.name})</h3>
+                        <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2.5rem' }}>
+                            <textarea
+                                className="input-field"
+                                style={{ minHeight: '100px', marginBottom: '1rem' }}
+                                placeholder="Escriba sua mensagem para a turma..."
+                                value={msgContent}
+                                onChange={e => setMsgContent(e.target.value)}
+                            />
+                            <button onClick={sendClassMessage} className="btn btn-primary" style={{ width: '100%' }}>
+                                <Send size={18} /> ENVIAR COMUNICADO
+                            </button>
+                        </div>
                     </div>
                 )}
             </main>
+
             <footer className="footer-credits">
                 <p>Desenvolvido pelo Professor Johnny Braga de Oliveira</p>
                 <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>© 2026 PlayGame System - All Rights Reserved</p>

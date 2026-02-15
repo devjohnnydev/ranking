@@ -31,7 +31,9 @@ export const DataProvider = ({ children }) => {
           username: parsed.username || '',
           name: parsed.name || parsed.username || 'Aventureiro',
           role: parsed.role || 'STUDENT',
-          photoUrl: parsed.photoUrl || ''
+          photoUrl: parsed.photoUrl || '',
+          bio: parsed.bio || '',
+          quote: parsed.quote || ''
         };
       }
       return null;

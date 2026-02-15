@@ -104,7 +104,7 @@ app.get('/api/classes', asyncHandler(async (req, res) => {
     if (studentId && studentId !== 'undefined') {
         const enrollments = await prisma.enrollment.findMany({
             where: { studentId: parseInt(studentId) },
-            include: { class: { include: { teacher: true } } }
+            include: { class: { include: { teacher: { select: { name: true, photoUrl: true, quote: true, bio: true } } } } }
         });
         return res.json(enrollments.map(e => ({
             ...e.class,
