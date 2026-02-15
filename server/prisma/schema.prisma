@@ -19,6 +19,7 @@ model User {
 
   // Teacher relations
   classesManaged Class[] @relation("TeacherClasses")
+  missions       Mission[] @relation("TeacherMissions")
   
   // Student relations
   enrollments    Enrollment[]
@@ -41,6 +42,7 @@ model Class {
   
   students  Enrollment[]
   activities Activity[]
+  missions   Mission[] @relation("ClassMissions")
   messages   Message[] @relation("ClassMessages")
 }
 
@@ -66,6 +68,22 @@ model Activity {
   classId     Int
   
   grades      Grade[]
+  createdAt   DateTime @default(now())
+}
+
+model Mission {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  reward      Int      @default(0)
+  deadline    DateTime?
+  
+  class       Class    @relation("ClassMissions", fields: [classId], references: [id])
+  classId     Int
+  
+  teacher     User     @relation("TeacherMissions", fields: [teacherId], references: [id])
+  teacherId   Int
+  
   createdAt   DateTime @default(now())
 }
 

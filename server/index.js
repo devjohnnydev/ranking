@@ -242,7 +242,39 @@ app.get('/api/messages', asyncHandler(async (req, res) => {
     res.json(messages);
 }));
 
-// Activities & Grades
+// Activities, Missions & Grades
+app.get('/api/missions', asyncHandler(async (req, res) => {
+    const { classId, teacherId } = req.query;
+    const where = {};
+    if (classId && classId !== 'undefined') where.classId = parseInt(classId);
+    if (teacherId && teacherId !== 'undefined') where.teacherId = parseInt(teacherId);
+    
+    const missions = await prisma.mission.findMany({
+        where,
+        include: { teacher: true, class: true },
+        orderBy: { createdAt: 'desc' }
+    });
+    res.json(missions);
+}));
+
+app.post('/api/missions', asyncHandler(async (req, res) => {
+    const { title, description, reward, deadline, classId, teacherId } = req.body;
+    if (!classId || classId === 'undefined') return res.status(400).json({ error: "ID da turma inválido" });
+    if (!teacherId || teacherId === 'undefined') return res.status(400).json({ error: "ID do professor inválido" });
+
+    const mission = await prisma.mission.create({
+        data: {
+            title,
+            description,
+            reward: parseInt(reward) || 0,
+            deadline: deadline ? new Date(deadline) : null,
+            classId: parseInt(classId),
+            teacherId: parseInt(teacherId)
+        }
+    });
+    res.json(mission);
+}));
+
 app.get('/api/activities', asyncHandler(async (req, res) => {
     const { classId } = req.query;
     if (!classId || classId === 'undefined') return res.json([]);
