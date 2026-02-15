@@ -90,7 +90,7 @@ const Login = () => {
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     {view === 'login' ? (
                         <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'transparent', fontSize: '0.85rem' }} onClick={() => setView('register')}>
-                            Não tem conta? <span style={{ color: 'var(--secondary)', marginLeft: '4px' }}>Cadastrar como Aluno</span>
+                            <span style={{ color: '#FFE81F', fontWeight: 'bold' }}>Não tem conta?</span> <span style={{ color: 'var(--secondary)', marginLeft: '4px' }}>Cadastrar como Aluno</span>
                         </button>
                     ) : (
                         <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'transparent', fontSize: '0.85rem' }} onClick={() => setView('login')}>
