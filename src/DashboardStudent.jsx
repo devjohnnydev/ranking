@@ -4,7 +4,7 @@ import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, Plus, Boo
 
 const DashboardStudent = () => {
     const {
-        user, logout, activities = [], grades = {}, ranking = [],
+        user, logout, activities = [], missions = [], grades = {}, ranking = [],
         messages = [], classes = [], selectedClass, setSelectedClass, joinClass, loading, refreshAll
     } = useData();
 
@@ -131,8 +131,26 @@ const DashboardStudent = () => {
                         </div>
 
                         <div>
-                            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.4rem' }}>Missões em {selectedClass?.name || '---'}</h3>
+                            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.4rem' }}>Missões da Classe em {selectedClass?.name || '---'}</h3>
                             <div style={{ display: 'grid', gap: '1rem' }}>
+                                {isApproved ? (
+                                    missions.map(mission => (
+                                        <div key={mission.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', background: 'rgba(255,255,255,0.05)', borderLeft: '4px solid var(--primary)' }}>
+                                            <div>
+                                                <p style={{ fontSize: '1rem', fontWeight: '700', color: '#FFFFFF' }}>{mission.title}</p>
+                                                <p style={{ fontSize: '0.85rem', color: '#E0E0E0' }}>{mission.description}</p>
+                                                <p style={{ fontSize: '0.7rem', color: 'var(--primary)', marginTop: '0.4rem' }}>Recompensa: {mission.reward} XP</p>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span className="badge" style={{ background: 'rgba(255, 232, 31, 0.2)', color: 'var(--primary)' }}>
+                                                    ATIVA
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : null}
+
+                                <h3 style={{ marginTop: '2rem', marginBottom: '1.5rem', fontSize: '1.4rem' }}>Atividades Avaliadas</h3>
                                 {isApproved ? (
                                     activities.map(act => {
                                         const grade = grades[`${user?.id}-${act.id}`];
@@ -251,6 +269,10 @@ const DashboardStudent = () => {
                     </div>
                 )}
             </main>
+            <footer className="footer-credits">
+                <p>Desenvolvido pelo Professor Johnny Braga de Oliveira</p>
+                <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>© 2026 PlayGame System - All Rights Reserved</p>
+            </footer>
         </div>
     );
 };

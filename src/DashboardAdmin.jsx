@@ -52,8 +52,8 @@ const StudentGradeRow = ({ student, activities, grades, onSaveGrade }) => {
 
 const DashboardAdmin = () => {
     const {
-        logout, user, students = [], activities = [],
-        addActivity, setStudentGrade, grades = {}, ranking = [],
+        logout, user, students = [], activities = [], missions = [],
+        addActivity, addMission, setStudentGrade, grades = {}, ranking = [],
         classes = [], selectedClass, setSelectedClass, createClass, sendMessage,
         pendingEnrollments = [], approveEnrollment, refreshAll, loading
     } = useData();
@@ -63,6 +63,7 @@ const DashboardAdmin = () => {
     const [newClassName, setNewClassName] = useState('');
     const [newClassSubject, setNewClassSubject] = useState('');
     const [newActivity, setNewActivity] = useState({ title: '', description: '', maxScore: 10 });
+    const [newMission, setNewMission] = useState({ title: '', description: '', reward: 100 });
     const [msgContent, setMsgContent] = useState('');
 
     const handleCreateClass = async (e) => {
@@ -83,7 +84,19 @@ const DashboardAdmin = () => {
         try {
             await addActivity({ ...newActivity, classId: selectedClass.id });
             setNewActivity({ title: '', description: '', maxScore: 10 });
-            alert('Missão lançada com sucesso!');
+            alert('Atividade lançada com sucesso!');
+        } catch (err) {
+            alert('Falha ao lançar atividade');
+        }
+    };
+
+    const handleAddMission = async (e) => {
+        e.preventDefault();
+        if (!selectedClass) return alert('Selecione uma turma primeiro');
+        try {
+            await addMission({ ...newMission, classId: selectedClass.id });
+            setNewMission({ title: '', description: '', reward: 100 });
+            alert('Missão de classe lançada com sucesso!');
         } catch (err) {
             alert('Falha ao lançar missão');
         }
@@ -301,46 +314,82 @@ const DashboardAdmin = () => {
 
                 {tab === 'missions' && (
                     <div>
-                        <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem', background: 'rgba(99, 102, 241, 0.05)' }}>
-                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Plus size={24} color="var(--primary)" /> Nova Missão para a Guilda
+                        <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem', background: 'rgba(255, 232, 31, 0.1)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+                                <Plus size={24} /> Nova Missão de Classe (XP p/ Todos)
                             </h3>
-                            <form onSubmit={handleAddActivity} style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) 2fr 100px 150px', gap: '1rem', alignItems: 'end' }}>
+                            <form onSubmit={handleAddMission} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 150px', gap: '1rem', alignItems: 'end' }}>
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Título</label>
-                                    <input className="input-field" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} required />
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Título da Missão</label>
+                                    <input className="input-field" value={newMission.title} onChange={e => setNewMission({ ...newMission, title: e.target.value })} required />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Descrição (Opcional)</label>
-                                    <input className="input-field" value={newActivity.description} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} />
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Instruções</label>
+                                    <input className="input-field" value={newMission.description} onChange={e => setNewMission({ ...newMission, description: e.target.value })} required />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Pontos</label>
-                                    <input type="number" className="input-field" value={newActivity.maxScore} onChange={e => setNewActivity({ ...newActivity, maxScore: parseFloat(e.target.value) || 0 })} required />
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>XP</label>
+                                    <input type="number" className="input-field" value={newMission.reward} onChange={e => setNewMission({ ...newMission, reward: parseInt(e.target.value) || 0 })} required />
                                 </div>
-                                <button type="submit" className="btn btn-primary">LANÇAR MISSÃO</button>
+                                <button type="submit" className="btn btn-primary">CRIAR MISSÃO</button>
                             </form>
                         </div>
 
-                        <h3 style={{ marginBottom: '1.5rem' }}>Missões Ativas ({activities.length})</h3>
+                        <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem', background: 'rgba(99, 102, 241, 0.05)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Plus size={24} color="var(--primary)" /> Novo Item de Avaliação (Individual)
+                            </h3>
+                            <form onSubmit={handleAddActivity} style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) 2fr 100px 150px', gap: '1rem', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Título</label>
+                                    <input className="input-field" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Descrição (Opcional)</label>
+                                    <input className="input-field" value={newActivity.description} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Pontos</label>
+                                    <input type="number" className="input-field" value={newActivity.maxScore} onChange={e => setNewActivity({ ...newActivity, maxScore: parseFloat(e.target.value) || 0 })} required />
+                                </div>
+                                <button type="submit" className="btn btn-primary">CRIAR ITEM</button>
+                            </form>
+                        </div>
+
+                        <h3 style={{ marginBottom: '1.5rem' }}>Missões de Classe Ativas ({missions.length})</h3>
+                        <div style={{ display: 'grid', gap: '1rem', marginBottom: '3rem' }}>
+                            {missions.map(m => (
+                                <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,232,31,0.05)', borderLeft: '4px solid var(--primary)' }}>
+                                    <div>
+                                        <h4 style={{ margin: 0, color: '#FFFFFF' }}>{m.title}</h4>
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#E0E0E0' }}>{m.description}</p>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{m.reward} XP</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h3 style={{ marginBottom: '1.5rem' }}>Atividades Avaliadas ({activities.length})</h3>
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             {activities.map(a => (
                                 <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
                                     <div>
                                         <h4 style={{ margin: 0, color: 'white' }}>{a.title}</h4>
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{a.description || 'Sem descrição'}</p>
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#E0E0E0' }}>{a.description || 'Sem descrição'}</p>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
                                             <span>{a.maxScore} XP</span>
                                         </div>
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(a.createdAt).toLocaleDateString()}</p>
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.7rem', color: '#E0E0E0' }}>{new Date(a.createdAt).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             ))}
-                            {activities.length === 0 && (
+                            {activities.length === 0 && missions.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--glass-border)', borderRadius: '16px' }}>
-                                    <p style={{ color: 'var(--text-muted)' }}>Nenhuma missão lançada ainda.</p>
+                                    <p style={{ color: 'var(--text-muted)' }}>Nenhuma missão ou atividade lançada ainda.</p>
                                 </div>
                             )}
                         </div>
@@ -400,6 +449,10 @@ const DashboardAdmin = () => {
                     </div>
                 )}
             </main>
+            <footer className="footer-credits">
+                <p>Desenvolvido pelo Professor Johnny Braga de Oliveira</p>
+                <p style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>© 2026 PlayGame System - All Rights Reserved</p>
+            </footer>
         </div>
     );
 };
