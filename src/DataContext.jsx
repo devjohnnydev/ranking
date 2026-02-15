@@ -226,6 +226,11 @@ export const DataProvider = ({ children }) => {
     setStudentGrade: async (s, act, score) => {
       await fetch(`${API_URL}/grades`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: s, activityId: act, score, teacherId: user.id }) });
       setGrades(prev => ({ ...prev, [`${s}-${act}`]: score }));
+      // Refresh ranking to show updated XP
+      if (selectedClass) {
+        const resRank = await fetch(`${API_URL}/ranking?classId=${selectedClass.id}&username=${user.username}`).then(r => r.json());
+        setRanking(Array.isArray(resRank) ? resRank : []);
+      }
     },
     ranking, messages,
     sendMessage: async (m) => {
