@@ -81,7 +81,19 @@ app.get('/api/admin/global-data', asyncHandler(async (req, res) => {
     if (!isJohnny(username)) return res.status(403).json({ error: "Acesso negado" });
 
     const [users, classes, activities, grades] = await Promise.all([
-        prisma.user.findMany({ include: { enrollments: true } }),
+        prisma.user.findMany({ 
+            include: { 
+                enrollments: {
+                    include: {
+                        class: {
+                            include: {
+                                teacher: true
+                            }
+                        }
+                    }
+                } 
+            } 
+        }),
         prisma.class.findMany({ include: { teacher: true } }),
         prisma.activity.findMany({ include: { class: true } }),
         prisma.grade.findMany()
@@ -90,6 +102,36 @@ app.get('/api/admin/global-data', asyncHandler(async (req, res) => {
 }));
 
 // Classes management
+app.delete('/api/classes/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { teacherId, username } = req.query;
+
+    const targetClass = await prisma.class.findUnique({
+        where: { id: parseInt(id) }
+    });
+
+    if (!targetClass) {
+        return res.status(404).json({ error: "Turma não encontrada" });
+    }
+
+    // Authorization check: Only Johnny (Admin) or the class teacher can delete
+    if (!isJohnny(username) && targetClass.teacherId !== parseInt(teacherId)) {
+        return res.status(403).json({ error: "Acesso negado para excluir esta turma" });
+    }
+
+    // Delete everything associated with the class
+    await prisma.$transaction([
+        prisma.grade.deleteMany({ where: { activity: { classId: parseInt(id) } } }),
+        prisma.activity.deleteMany({ where: { classId: parseInt(id) } }),
+        prisma.mission.deleteMany({ where: { classId: parseInt(id) } }),
+        prisma.enrollment.deleteMany({ where: { classId: parseInt(id) } }),
+        prisma.message.deleteMany({ where: { toClassId: parseInt(id) } }),
+        prisma.class.delete({ where: { id: parseInt(id) } })
+    ]);
+
+    res.json({ message: "Turma excluída com sucesso" });
+}));
+
 app.get('/api/classes', asyncHandler(async (req, res) => {
     const { teacherId, studentId, username } = req.query;
 
@@ -364,14 +406,29 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
 
     const users = await prisma.user.findMany({
         where,
-        include: { grades: true, enrollments: { include: { class: true } } }
+        include: { 
+            grades: true, 
+            enrollments: { 
+                where: { status: 'APPROVED' },
+                include: { 
+                    class: { 
+                        include: { 
+                            teacher: {
+                                select: { name: true }
+                            } 
+                        } 
+                    } 
+                } 
+            } 
+        }
     });
 
     const ranking = users.map(u => {
         const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
-        // Find teacher from the first approved enrollment if exists
-        const mainClass = u.enrollments.find(e => e.status === 'APPROVED')?.class;
-        const teacherName = mainClass?.teacher?.name || 'N/A';
+        
+        // Find teacher from the first approved enrollment
+        const approvedEnrollment = u.enrollments.find(e => e.status === 'APPROVED');
+        const teacherName = approvedEnrollment?.class?.teacher?.name || 'N/A';
 
         return {
             id: u.id,

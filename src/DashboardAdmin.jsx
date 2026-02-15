@@ -132,6 +132,27 @@ const DashboardAdmin = () => {
         }
     };
 
+    const handleDeleteClass = async () => {
+        if (!selectedClass) return;
+        if (!confirm(`TEM CERTEZA? Isso apagará a turma "${selectedClass.name}", todos os alunos, notas e atividades PERMANENTEMENTE.`)) return;
+        
+        try {
+            const res = await fetch(`/api/classes/${selectedClass.id}?teacherId=${user.id}&username=${user.username}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                alert('Turma encerrada e apagada com sucesso!');
+                setSelectedClass(null);
+                refreshAll();
+            } else {
+                const data = await res.json();
+                alert('Erro: ' + (data.error || 'Falha ao apagar turma'));
+            }
+        } catch (err) {
+            alert('Erro de conexão ao apagar turma');
+        }
+    };
+
     return (
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -244,6 +265,20 @@ const DashboardAdmin = () => {
                     <div style={{ textAlign: 'right' }}>
                         <p style={{ fontWeight: '800', fontSize: '1.2rem' }}>{selectedClass.name}</p>
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{selectedClass.subject}</p>
+                        <button 
+                            onClick={handleDeleteClass}
+                            className="btn"
+                            style={{ 
+                                marginTop: '0.5rem', 
+                                padding: '0.4rem 0.8rem', 
+                                fontSize: '0.7rem', 
+                                background: 'rgba(239, 68, 68, 0.1)', 
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.2)'
+                            }}
+                        >
+                            ENCERRAR SEMESTRE (APAGAR)
+                        </button>
                     </div>
                 </div>
             )}

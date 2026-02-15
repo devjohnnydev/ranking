@@ -89,8 +89,11 @@ const DashboardSuperAdmin = () => {
             .map(u => {
                 const uGrades = grades.filter(g => g && g.studentId === u.id);
                 const xp = uGrades.reduce((acc, g) => acc + (parseFloat(g.score) * 10 || 0), 0);
-                const mainClass = classes.find(c => c.students?.some(e => e.studentId === u.id));
-                const teacherName = mainClass?.teacher?.name || 'N/A';
+                
+                // Find teacher from approved enrollment in global data
+                const approvedEnrollment = u.enrollments?.find(e => e.status === 'APPROVED');
+                const teacherName = approvedEnrollment?.class?.teacher?.name || 'N/A';
+                
                 return { ...u, xp, level: Math.floor(Math.sqrt(xp / 100)) + 1, teacherName };
             })
             .filter(u => {
@@ -208,7 +211,7 @@ const DashboardSuperAdmin = () => {
                                                         </div>
                                                         <span style={{ fontWeight: '700' }}>{s.name}</span>
                                                     </td>
-                                                    <td style={{ padding: '1.2rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                                                    <td style={{ padding: '1.2rem', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 'bold' }}>
                                                         {s.teacherName}
                                                     </td>
                                                     <td style={{ padding: '1.2rem' }}>
