@@ -369,13 +369,18 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
 
     const ranking = users.map(u => {
         const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
+        // Find teacher from the first approved enrollment if exists
+        const mainClass = u.enrollments.find(e => e.status === 'APPROVED')?.class;
+        const teacherName = mainClass?.teacher?.name || 'N/A';
+
         return {
             id: u.id,
             name: u.name,
             photoUrl: u.photoUrl,
             xp: totalXP,
             level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
-            classes: u.enrollments.map(e => e.class.name)
+            classes: u.enrollments.map(e => e.class.name),
+            teacherName: teacherName
         };
     }).sort((a, b) => b.xp - a.xp);
 

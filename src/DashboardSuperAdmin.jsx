@@ -76,18 +76,38 @@ const DashboardSuperAdmin = () => {
         }
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [teacherFilter, setTeacherFilter] = useState('');
+
     const globalRanking = useMemo(() => {
         const users = globalData.users || [];
         const grades = globalData.grades || [];
+        const classes = globalData.classes || [];
+        
         return users
             .filter(u => u && u.role === 'STUDENT')
             .map(u => {
                 const uGrades = grades.filter(g => g && g.studentId === u.id);
                 const xp = uGrades.reduce((acc, g) => acc + (parseFloat(g.score) * 10 || 0), 0);
-                return { ...u, xp, level: Math.floor(Math.sqrt(xp / 100)) + 1 };
+                const mainClass = classes.find(c => c.students?.some(e => e.studentId === u.id));
+                const teacherName = mainClass?.teacher?.name || 'N/A';
+                return { ...u, xp, level: Math.floor(Math.sqrt(xp / 100)) + 1, teacherName };
+            })
+            .filter(u => {
+                const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesTeacher = teacherFilter === '' || u.teacherName === teacherFilter;
+                return matchesSearch && matchesTeacher;
             })
             .sort((a, b) => b.xp - a.xp);
-    }, [globalData.users, globalData.grades]);
+    }, [globalData.users, globalData.grades, globalData.classes, searchTerm, teacherFilter]);
+
+    const teacherNames = useMemo(() => {
+        const names = new Set();
+        (globalData.classes || []).forEach(c => {
+            if (c.teacher?.name) names.add(c.teacher.name);
+        });
+        return Array.from(names).sort();
+    }, [globalData.classes]);
 
     const studentCount = (globalData.users || []).filter(u => u && u.role === 'STUDENT').length;
     const teacherCount = teachers.length;
@@ -138,6 +158,33 @@ const DashboardSuperAdmin = () => {
                         {tab === 'ranking' && (
                             <div>
                                 <h3 style={{ marginBottom: '2.5rem', fontSize: '1.6rem' }}>Hall da Fama da Rede</h3>
+                                
+                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
+                                        <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
+                                        <input 
+                                            className="input-field" 
+                                            style={{ paddingLeft: '2.5rem' }} 
+                                            placeholder="Filtrar por nome do aluno..." 
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                        <select 
+                                            className="input-field"
+                                            value={teacherFilter}
+                                            onChange={e => setTeacherFilter(e.target.value)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <option value="">Todos os Professores</option>
+                                            {teacherNames.map(name => (
+                                                <option key={name} value={name} style={{ color: 'black' }}>{name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.8rem' }}>
                                         <thead>
@@ -151,18 +198,18 @@ const DashboardSuperAdmin = () => {
                                         </thead>
                                         <tbody>
                                             {globalRanking.map((s, i) => (
-                                                <tr key={s.id} style={{ background: i === 0 ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.03)' }}>
+                                                <tr key={s.id} style={{ background: i === 0 && !searchTerm && !teacherFilter ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255,255,255,0.03)' }}>
                                                     <td style={{ padding: '1.2rem', fontWeight: '900', borderTopLeftRadius: '15px', borderBottomLeftRadius: '15px' }}>
                                                         {i + 1}º
                                                     </td>
                                                     <td style={{ padding: '1.2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'var(--primary)', border: i === 0 ? '2px solid var(--warning)' : 'none' }}>
+                                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'var(--primary)', border: i === 0 && !searchTerm && !teacherFilter ? '2px solid var(--warning)' : 'none' }}>
                                                             {s.photoUrl ? <img src={s.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Users size={18} style={{ margin: '11px' }} />}
                                                         </div>
                                                         <span style={{ fontWeight: '700' }}>{s.name}</span>
                                                     </td>
                                                     <td style={{ padding: '1.2rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                                                        {globalData.classes.find(c => c.students?.some(e => e.studentId === s.id))?.teacher?.name || 'N/A'}
+                                                        {s.teacherName}
                                                     </td>
                                                     <td style={{ padding: '1.2rem' }}>
                                                         <span className="badge" style={{ background: 'var(--primary)', color: 'white' }}>LVL {s.level}</span>
@@ -172,6 +219,13 @@ const DashboardSuperAdmin = () => {
                                                     </td>
                                                 </tr>
                                             ))}
+                                            {globalRanking.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                        Nenhum aventureiro encontrado com estes filtros.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
