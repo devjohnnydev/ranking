@@ -92,13 +92,13 @@ body {
 
 .btn-primary {
   background: var(--primary);
-  color: #000000;
+  color: #000000 !important;
   box-shadow: 0 4px 14px 0 rgba(255, 232, 31, 0.39);
 }
 
 .btn-secondary {
   background: var(--secondary);
-  color: #FFFFFF;
+  color: #000000 !important;
   box-shadow: 0 4px 14px 0 rgba(236, 72, 153, 0.39);
 }
 
@@ -151,6 +151,10 @@ h3 {
 
 p, span, label, td, th {
     color: #E0E0E0 !important;
+}
+
+button {
+    color: #000000 !important;
 }
 
 .badge {
