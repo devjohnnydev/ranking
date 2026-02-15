@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poller+One&display=swap');
+
 :root {
   --primary: #FFE81F;
   --primary-hover: #E6D11B;
@@ -5,15 +7,13 @@
   --bg-dark: #000000;
   --bg-card: rgba(20, 20, 20, 0.85);
   --text-main: #FFFFFF;
-  --text-muted: #E0E0E0; /* Lighter text for better visibility */
+  --text-muted: #E0E0E0;
   --glass-border: rgba(255, 232, 31, 0.3);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   --success: #4ade80;
   --warning: #FFE81F;
   --font-game: 'Inter', system-ui, -apple-system, sans-serif;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Poller+One&display=swap');
 
 * {
   box-sizing: border-box;
