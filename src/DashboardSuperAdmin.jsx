@@ -97,10 +97,11 @@ const DashboardSuperAdmin = () => {
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div>
-                    <h1 style={{ color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '2.2rem' }}>
-                        <ShieldAlert size={36} /> Painel Supremo
+                    <h1 style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '2.2rem', textTransform: 'uppercase' }}>
+                        PlayGame
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Mestre Johnny Oliveira (johnny.oliveira@sp.senai.br)</p>
+                    <p style={{ color: 'var(--text-muted)', fontWeight: 'bold', fontSize: '0.8rem' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
+                    <p style={{ color: 'var(--secondary)', fontWeight: 'bold', marginTop: '0.4rem' }}>Painel Supremo: {user?.name || user?.username}</p>
                 </div>
                 <button onClick={logout} className="btn glass-card" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                     Sair do Trono <LogOut size={18} />

@@ -104,7 +104,9 @@ const DashboardAdmin = () => {
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.8rem', color: 'var(--secondary)' }}>Mestre {user?.name || user?.username}</h1>
+                    <h1 style={{ fontSize: '1.8rem', color: 'var(--primary)', textTransform: 'uppercase' }}>PlayGame</h1>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
+                    <h2 style={{ fontSize: '1.2rem', color: 'var(--secondary)', marginTop: '0.5rem' }}>Mestre {user?.name || user?.username}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.8rem' }}>
                         <div className="glass-card" style={{ padding: '0.6rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                             <BookOpen size={18} color="var(--primary)" />

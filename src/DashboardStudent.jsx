@@ -48,17 +48,18 @@ const DashboardStudent = () => {
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{ position: 'relative' }}>
-                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--secondary)', background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 20px rgba(236, 72, 153, 0.3)' }}>
+                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 20px rgba(255, 232, 31, 0.3)' }}>
                             {user?.photoUrl ? <img src={user.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
                         </div>
-                        <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: 'var(--warning)', color: 'white', padding: '4px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                        <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: 'var(--primary)', color: 'black', padding: '4px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
                             LVL {level}
                         </div>
                     </div>
                     <div>
-                        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {user?.name || user?.username} <Star size={20} fill="var(--warning)" color="var(--warning)" />
+                        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+                            PlayGame
                         </h2>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold', marginBottom: '0.5rem' }}>By Prof. Johnny Braga de Oliveira</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                             <BookOpen size={14} color="var(--primary)" />
                             <select

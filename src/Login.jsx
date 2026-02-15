@@ -38,10 +38,11 @@ const Login = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem' }}>
             <div className="glass-card" style={{ padding: '2.5rem', width: '100%', maxWidth: '450px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'linear-gradient(90deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        EduGame
+                    <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', color: 'var(--primary)', textShadow: '0 0 10px rgba(255, 232, 31, 0.5)', fontWeight: '900', textTransform: 'uppercase' }}>
+                        PlayGame
                     </h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{view === 'login' ? 'Entre na sua Guilda' : 'Novo Aluno: Criar Perfil'}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>{view === 'login' ? 'Entre na sua Guilda' : 'Novo Aluno: Criar Perfil'}</p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
