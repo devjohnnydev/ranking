@@ -144,10 +144,10 @@ const DashboardSuperAdmin = () => {
             </div>
 
             <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '3rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-primary' : 'glass-card'}`} style={{ flex: 1, minWidth: '160px' }}><Globe size={18} /> Ranking Global</button>
-                <button onClick={() => setTab('teachers')} className={`btn ${tab === 'teachers' ? 'btn-primary' : 'glass-card'}`} style={{ flex: 1, minWidth: '160px' }}><Users size={18} /> Professores</button>
-                <button onClick={() => setTab('classes')} className={`btn ${tab === 'classes' ? 'btn-primary' : 'glass-card'}`} style={{ flex: 1, minWidth: '160px' }}><BookOpen size={18} /> Todas Turmas</button>
-                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-primary' : 'glass-card'}`} style={{ flex: 1, minWidth: '160px' }}><MessageSquare size={18} /> Decreto Real</button>
+                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1, minWidth: '160px' }}><Globe size={18} /> Ranking Global</button>
+                <button onClick={() => setTab('teachers')} className={`btn ${tab === 'teachers' ? 'btn-active' : ''}`} style={{ flex: 1, minWidth: '160px' }}><Users size={18} /> Professores</button>
+                <button onClick={() => setTab('classes')} className={`btn ${tab === 'classes' ? 'btn-active' : ''}`} style={{ flex: 1, minWidth: '160px' }}><BookOpen size={18} /> Todas Turmas</button>
+                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-active' : ''}`} style={{ flex: 1, minWidth: '160px' }}><MessageSquare size={18} /> Decreto Real</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '3rem' }}>

@@ -106,11 +106,11 @@ const DashboardStudent = () => {
             )}
 
             <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Trophy size={18} /> Meu Status</button>
-                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}>
+                <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Trophy size={18} /> Meu Status</button>
+                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}>
                     <MessageSquare size={18} /> Mural {messages.length > 0 && <span className="badge" style={{ background: '#ef4444', height: '8px', width: '8px', padding: '0', marginLeft: '5px' }}></span>}
                 </button>
-                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Award size={18} /> Rankings</button>
+                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Award size={18} /> Rankings</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem', minHeight: '400px' }}>

@@ -249,11 +249,11 @@ const DashboardAdmin = () => {
             )}
 
             <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', overflowX: 'auto', paddingBottom: '0.5rem', flexWrap: 'nowrap' }}>
-                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Trophy size={18} /> Ranking</button>
-                <button onClick={() => setTab('students')} className={`btn ${tab === 'students' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Users size={18} /> Alunos</button>
-                <button onClick={() => setTab('missions')} className={`btn ${tab === 'missions' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Plus size={18} /> Missões</button>
-                <button onClick={() => setTab('grades')} className={`btn ${tab === 'grades' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Award size={18} /> Avaliação</button>
-                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-primary' : 'glass-card'}`} style={{ flex: '1', minWidth: '140px' }}><Send size={18} /> Mensagens</button>
+                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Trophy size={18} /> Ranking</button>
+                <button onClick={() => setTab('students')} className={`btn ${tab === 'students' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Users size={18} /> Alunos</button>
+                <button onClick={() => setTab('missions')} className={`btn ${tab === 'missions' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Plus size={18} /> Missões</button>
+                <button onClick={() => setTab('grades')} className={`btn ${tab === 'grades' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Award size={18} /> Avaliação</button>
+                <button onClick={() => setTab('messages')} className={`btn ${tab === 'messages' ? 'btn-active' : ''}`} style={{ flex: '1', minWidth: '140px' }}><Send size={18} /> Mensagens</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
