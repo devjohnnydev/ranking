@@ -423,14 +423,15 @@ app.delete('/api/enrollments/remove', asyncHandler(async (req, res) => {
     res.json({ message: "Aluno removido com sucesso" });
 }));
 
-// Profile upload
+// Profile update
 app.patch('/api/profile/:id', asyncHandler(async (req, res) => {
-    const { photoUrl, name, password } = req.body;
+    const { photoUrl, name, password, bio, quote } = req.body;
     const user = await prisma.user.update({
         where: { id: parseInt(req.params.id) },
-        data: { photoUrl, name, password }
+        data: { photoUrl, name, password, bio, quote }
     });
-    res.json(user);
+    const { password: _, ...userNoPass } = user;
+    res.json(userNoPass);
 }));
 
 // 404 handler

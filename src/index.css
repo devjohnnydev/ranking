@@ -92,20 +92,30 @@ body {
 
 .btn-primary {
   background: var(--primary);
-  color: black;
+  color: #000000;
   box-shadow: 0 4px 14px 0 rgba(255, 232, 31, 0.39);
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 232, 31, 0.45);
 }
 
 .btn-secondary {
   background: var(--secondary);
-  color: white;
+  color: #FFFFFF;
   box-shadow: 0 4px 14px 0 rgba(236, 72, 153, 0.39);
+}
+
+.btn-logout {
+  background: #ff4444;
+  color: #FFFFFF;
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #cc0000;
+  transform: scale(1.1);
 }
 
 .btn-secondary:hover {
