@@ -45,6 +45,7 @@ export const DataProvider = ({ children }) => {
   const [selectedClass, setSelectedClass] = useState(null);
   const [students, setStudents] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [missions, setMissions] = useState([]);
   const [grades, setGrades] = useState({});
   const [ranking, setRanking] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -54,10 +55,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchClassData = useCallback(async (classId) => {
     if (!classId || !user) return;
-    try {
-      const [resStu, resAct, resGrades, resRank, resPending] = await Promise.all([
+    const [resStu, resAct, resMissions, resGrades, resRank, resPending] = await Promise.all([
         fetch(`${API_URL}/students?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/activities?classId=${classId}`).then(r => r.json()),
+        fetch(`${API_URL}/missions?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/grades?classId=${classId}`).then(r => r.json()),
         fetch(`${API_URL}/ranking?classId=${classId}&username=${user.username}`).then(r => r.json()),
         fetch(`${API_URL}/enrollments/pending?classId=${classId}`).then(r => r.json())
@@ -65,6 +66,7 @@ export const DataProvider = ({ children }) => {
 
       setStudents(Array.isArray(resStu) ? resStu : []);
       setActivities(Array.isArray(resAct) ? resAct : []);
+      setMissions(Array.isArray(resMissions) ? resMissions : []);
       setRanking(Array.isArray(resRank) ? resRank : []);
       setPendingEnrollments(Array.isArray(resPending) ? resPending : []);
 
