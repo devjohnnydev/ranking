@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, activities, grades
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, activities, grades, messages
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -145,9 +145,12 @@ const DashboardStudent = () => {
                 </div>
             )}
 
-            <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
+            <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Hall da Fama</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`} style={{ flex: 1 }}><BookOpen size={18} /> Minhas Notas</button>
+                <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`} style={{ flex: 1, position: 'relative' }}>
+                    <Bell size={18} /> {messages.length > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{messages.length}</span>} Murais de Recados
+                </button>
                 <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Trophy size={18} /> Meu Status</button>
             </nav>
 
@@ -201,6 +204,38 @@ const DashboardStudent = () => {
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
                                     <BookOpen size={40} style={{ marginBottom: '1rem' }} />
                                     <p>Nenhuma atividade lançada para sua turma ainda.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'mensagens' && (
+                    <div>
+                        <h3 style={{ marginBottom: '2rem' }}>Mural de Avisos da Guilda</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                            {messages.map(m => (
+                                <div key={m.id} className="glass-card" style={{
+                                    padding: '1.5rem',
+                                    background: m.alunoId ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 232, 31, 0.05)',
+                                    borderLeft: m.alunoId ? '4px solid var(--secondary)' : '4px solid var(--primary)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                                        <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: m.alunoId ? 'var(--secondary)' : 'var(--primary)' }}>
+                                            {m.alunoId ? '👤 MENSAGEM INDIVIDUAL' : '📣 AVISO GERAL'}
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date(m.data_criacao).toLocaleString()}</span>
+                                    </div>
+                                    <p style={{ lineHeight: '1.6', margin: 0, fontSize: '1.05rem' }}>{m.conteudo}</p>
+                                    <div style={{ marginTop: '0.8rem', textAlign: 'right', fontSize: '0.75rem', opacity: 0.6 }}>
+                                        — {m.professor?.nome || 'Seu Mestre'}
+                                    </div>
+                                </div>
+                            ))}
+                            {messages.length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
+                                    <MessageSquare size={40} style={{ marginBottom: '1rem' }} />
+                                    <p>Nenhum recado no mural ainda.</p>
                                 </div>
                             )}
                         </div>

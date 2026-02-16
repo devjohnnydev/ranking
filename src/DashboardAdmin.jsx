@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
-        createClass, updateProfile, activities, students
+        createClass, updateProfile, activities, students, sendMessage, messages
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -23,6 +23,10 @@ const DashboardAdmin = () => {
 
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [editGrades, setEditGrades] = useState({});
+
+    // Messaging state
+    const [msgTarget, setMsgTarget] = useState('turma'); // 'turma' or alumnoId
+    const [msgContent, setMsgContent] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -74,14 +78,34 @@ const DashboardAdmin = () => {
         if (value === undefined || value === '') return;
         try {
             await setStudentGrade(studentId, activityId, value);
-            alert('Nota salva!');
+            alert('Nota salva e aluno notificado!');
         } catch (err) {
             alert('Erro ao salvar nota');
         }
     };
 
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!msgContent.trim()) return;
+        try {
+            const data = { conteudo: msgContent };
+            if (msgTarget === 'turma') {
+                if (!selectedClass) return alert('Selecione uma turma');
+                data.turmaId = selectedClass.id;
+            } else {
+                data.alunoId = parseInt(msgTarget);
+            }
+            await sendMessage(data);
+            setMsgContent('');
+            alert('Mensagem enviada!');
+        } catch (err) {
+            alert('Erro ao enviar mensagem');
+        }
+    };
+
     const filteredStudents = students.filter(s => !selectedClass || s.turmaId === selectedClass.id);
     const filteredActivities = activities.filter(a => !selectedClass || a.turmaId === selectedClass.id);
+    const filteredMessages = messages.filter(m => !selectedClass || m.turmaId === selectedClass.id || (m.aluno && filteredStudents.some(s => s.id === m.alunoId)));
 
     return (
         <div className="container">
@@ -171,9 +195,10 @@ const DashboardAdmin = () => {
                 </div>
             )}
 
-            <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
+            <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`}><Trophy size={18} /> Ranking</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`}><Plus size={18} /> Atividades/Notas</button>
+                <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`}><MessageCircle size={18} /> Mensagens</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
@@ -242,41 +267,43 @@ const DashboardAdmin = () => {
                                     </div>
                                     <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '2rem' }}>{selectedActivity.descricao || 'Sem descrição.'}</p>
 
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}>
-                                                <th style={{ padding: '0.8rem' }}>ALUNO</th>
-                                                <th style={{ padding: '0.8rem' }}>LANÇAR NOTA</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredStudents.map(student => {
-                                                const existingGrade = selectedActivity.notas?.find(n => n.alunoId === student.id)?.valor;
-                                                return (
-                                                    <tr key={student.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                        <td style={{ padding: '0.8rem' }}>{student.nome}</td>
-                                                        <td style={{ padding: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                            <input
-                                                                className="input-field"
-                                                                type="number"
-                                                                style={{ width: '80px', padding: '0.5rem' }}
-                                                                placeholder={existingGrade !== undefined ? existingGrade.toString() : 'Nota'}
-                                                                value={editGrades[`${student.id}-${selectedActivity.id}`] ?? ''}
-                                                                onChange={e => setEditGrades({ ...editGrades, [`${student.id}-${selectedActivity.id}`]: e.target.value })}
-                                                            />
-                                                            <button
-                                                                onClick={() => handleSetGrade(student.id, selectedActivity.id)}
-                                                                className="btn btn-primary"
-                                                                style={{ padding: '0.5rem' }}
-                                                            >
-                                                                <CheckCircle size={18} />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}>
+                                                    <th style={{ padding: '0.8rem' }}>ALUNO</th>
+                                                    <th style={{ padding: '0.8rem' }}>LANÇAR NOTA</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredStudents.map(student => {
+                                                    const existingGrade = selectedActivity.notas?.find(n => n.alunoId === student.id)?.valor;
+                                                    return (
+                                                        <tr key={student.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <td style={{ padding: '0.8rem' }}>{student.nome}</td>
+                                                            <td style={{ padding: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                <input
+                                                                    className="input-field"
+                                                                    type="number"
+                                                                    style={{ width: '80px', padding: '0.5rem' }}
+                                                                    placeholder={existingGrade !== undefined ? existingGrade.toString() : 'Nota'}
+                                                                    value={editGrades[`${student.id}-${selectedActivity.id}`] ?? ''}
+                                                                    onChange={e => setEditGrades({ ...editGrades, [`${student.id}-${selectedActivity.id}`]: e.target.value })}
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleSetGrade(student.id, selectedActivity.id)}
+                                                                    className="btn btn-primary"
+                                                                    style={{ padding: '0.5rem' }}
+                                                                >
+                                                                    <CheckCircle size={18} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
@@ -284,6 +311,44 @@ const DashboardAdmin = () => {
                                     <p>Selecione uma atividade para avaliar ou crie uma nova.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'mensagens' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
+                        <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(255, 255, 255, 0.05)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Send size={20} /> Enviar Mensagem</h3>
+                            <form onSubmit={handleSendMessage} style={{ display: 'grid', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Para quem?</label>
+                                    <select className="input-field" value={msgTarget} onChange={e => setMsgTarget(e.target.value)} style={{ padding: '0.5rem' }}>
+                                        <option value="turma">📣 Todos da Turma Atual</option>
+                                        <optgroup label="Alunos Individuais">
+                                            {filteredStudents.map(s => <option key={s.id} value={s.id}>👤 {s.nome}</option>)}
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <textarea className="input-field" placeholder="Escreva sua mensagem aqui..." value={msgContent} onChange={e => setMsgContent(e.target.value)} style={{ minHeight: '120px' }} />
+                                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>ENVIAR MENSAGEM</button>
+                            </form>
+                        </div>
+                        <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Histórico de Recados</h3>
+                            <div style={{ maxHeight: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {filteredMessages.map(m => (
+                                    <div key={m.id} className="glass-card" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderLeft: m.turmaId ? '4px solid var(--primary)' : '4px solid var(--secondary)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: m.turmaId ? 'var(--primary)' : 'var(--secondary)' }}>
+                                                {m.turmaId ? '📣 PARA TURMA' : `👤 PARA: ${m.aluno?.nome}`}
+                                            </span>
+                                            <span style={{ fontSize: '0.65rem', opacity: 0.5 }}>{new Date(m.data_criacao).toLocaleString()}</span>
+                                        </div>
+                                        <p style={{ fontSize: '0.9rem', margin: 0 }}>{m.conteudo}</p>
+                                    </div>
+                                ))}
+                                {filteredMessages.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5 }}>Nenhuma mensagem enviada.</p>}
+                            </div>
                         </div>
                     </div>
                 )}

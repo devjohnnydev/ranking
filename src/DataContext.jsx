@@ -63,7 +63,8 @@ export const DataProvider = ({ children }) => {
       const promises = [
         authFetch(`${API_URL}/turmas`).then(r => r.json()),
         authFetch(`${API_URL}/ranking`).then(r => r.json()),
-        authFetch(`${API_URL}/atividades`).then(r => r.json())
+        authFetch(`${API_URL}/atividades`).then(r => r.json()),
+        authFetch(`${API_URL}/mensagens`).then(r => r.json())
       ];
 
       if (user.role === 'ALUNO') {
@@ -72,11 +73,12 @@ export const DataProvider = ({ children }) => {
         promises.push(authFetch(`${API_URL}/alunos`).then(r => r.json()));
       }
 
-      const [resClasses, resRank, resActivities, resExtra] = await Promise.all(promises);
+      const [resClasses, resRank, resActivities, resMessages, resExtra] = await Promise.all(promises);
 
       setClasses(Array.isArray(resClasses) ? resClasses : []);
       setRanking(Array.isArray(resRank) ? resRank : []);
       setActivities(Array.isArray(resActivities) ? resActivities : []);
+      setMessages(Array.isArray(resMessages) ? resMessages : []);
 
       if (user.role === 'ALUNO') {
         // Map grades to a more accessible format if needed
@@ -208,6 +210,15 @@ export const DataProvider = ({ children }) => {
       });
       if (!res.ok) throw new Error("Falha ao alterar senha");
       setUser(prev => ({ ...prev, primeiro_acesso: false }));
+    },
+    sendMessage: async (data) => {
+      const res = await authFetch(`${API_URL}/mensagens`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Falha ao enviar mensagem");
+      setNeedsRefresh(true);
+      return await res.json();
     },
     refreshAll: () => setNeedsRefresh(true)
   }), [user, token, loading, classes, selectedClass, students, activities, missions, grades, ranking, messages, authFetch]);

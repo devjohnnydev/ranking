@@ -328,8 +328,49 @@ app.get('/api/minhas-notas', authenticate, authorize(['ALUNO']), asyncHandler(as
     res.json(notas);
 }));
 
+app.get('/api/mensagens', authenticate, asyncHandler(async (req, res) => {
+    const where = {};
+    if (req.user.role === 'ALUNO') {
+        const student = await prisma.aluno.findUnique({ where: { id: req.user.id } });
+        where.OR = [
+            { alunoId: req.user.id },
+            { turmaId: student.turmaId }
+        ];
+    } else if (req.user.role === 'PROFESSOR') {
+        where.professorId = req.user.id;
+    }
+
+    const mensagens = await prisma.mensagem.findMany({
+        where,
+        orderBy: { data_criacao: 'desc' },
+        include: {
+            professor: { select: { nome: true } },
+            aluno: { select: { nome: true } },
+            turma: { select: { nome: true } }
+        }
+    });
+    res.json(mensagens);
+}));
+
+app.post('/api/mensagens', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { conteudo, alunoId, turmaId } = req.body;
+    const mensagem = await prisma.mensagem.create({
+        data: {
+            conteudo,
+            professorId: req.user.id,
+            alunoId: alunoId ? parseInt(alunoId) : null,
+            turmaId: turmaId ? parseInt(turmaId) : null
+        }
+    });
+    res.json(mensagem);
+}));
+
 app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
     const { alunoId, atividadeId, valor } = req.body;
+
+    // Get activity info for the notification
+    const atividade = await prisma.atividade.findUnique({ where: { id: parseInt(atividadeId) } });
+
     const grade = await prisma.nota.upsert({
         where: { alunoId_atividadeId: { alunoId: parseInt(alunoId), atividadeId: parseInt(atividadeId) } },
         update: { valor: parseFloat(valor) },
@@ -339,6 +380,16 @@ app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(asyn
             valor: parseFloat(valor)
         }
     });
+
+    // Create automatic notification (Mensagem)
+    await prisma.mensagem.create({
+        data: {
+            conteudo: `Sua atividade "${atividade.titulo}" foi avaliada! Nota: ${valor}/${atividade.nota_maxima}. (+${parseFloat(valor) * 10} XP)`,
+            professorId: req.user.id,
+            alunoId: parseInt(alunoId)
+        }
+    });
+
     res.json(grade);
 }));
 
