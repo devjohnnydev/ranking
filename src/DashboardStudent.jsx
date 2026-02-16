@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell, Lock } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell, Lock, Upload, Image as ImageIcon } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, activities, grades, messages
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -17,6 +17,20 @@ const DashboardStudent = () => {
     });
 
     const [newPassword, setNewPassword] = useState('');
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
+    const fileInputRef = useRef(null);
+
+    // Helper to get full image URL
+    const getFullImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        // Assume relative URLs are served from the backend
+        const baseUrl = window.location.origin.includes('localhost:5173')
+            ? 'http://localhost:3001'
+            : window.location.origin;
+        return `${baseUrl}${url}`;
+    };
 
     useEffect(() => {
         if (user) {
@@ -25,19 +39,42 @@ const DashboardStudent = () => {
                 foto_url: user.foto_url || '',
                 info: user.info || ''
             });
+            setPreviewUrl(getFullImageUrl(user.foto_url));
         }
     }, [user]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
-            await updateStudentProfile(profileData);
+            let finalFotoUrl = profileData.foto_url;
+
+            if (selectedFile) {
+                const uploadedUrl = await uploadFile(selectedFile);
+                finalFotoUrl = uploadedUrl;
+            }
+
+            await updateStudentProfile({ ...profileData, foto_url: finalFotoUrl });
+
             if (newPassword) {
                 await updateStudentPassword(newPassword);
                 setNewPassword('');
             }
+
             setShowProfileEdit(false);
-            alert('Perfil e login atualizados com sucesso!');
+            setSelectedFile(null);
+            alert('Perfil atualizado com sucesso!');
             refreshAll();
         } catch (err) {
             alert('Falha ao atualizar perfil: ' + err.message);
@@ -67,7 +104,7 @@ const DashboardStudent = () => {
                         style={{ position: 'relative', cursor: 'pointer' }}
                     >
                         <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', background: 'rgba(255,255,255,0.05)' }}>
-                            {user?.foto_url ? <img src={user.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
+                            {user?.foto_url ? <img src={getFullImageUrl(user.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
                         </div>
                         <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: 'var(--primary)', color: 'black', padding: '4px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>
                             LVL {level}
@@ -100,6 +137,19 @@ const DashboardStudent = () => {
                         <Camera size={20} /> Configurações de Aventureiro
                     </h3>
                     <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '1.2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '4px solid var(--primary)', cursor: 'pointer', position: 'relative' }}
+                            >
+                                {previewUrl ? <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={60} style={{ margin: '30px', color: 'var(--text-muted)' }} />}
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+                                    <Upload color="white" size={30} />
+                                </div>
+                            </div>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*" />
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div>
                                 <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Nome</label>
@@ -110,10 +160,15 @@ const DashboardStudent = () => {
                                 <input className="input-field" value={user?.email || ''} disabled style={{ opacity: 0.5 }} />
                             </div>
                         </div>
+
                         <div>
-                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>URL da Foto</label>
-                            <input className="input-field" placeholder="https://..." value={profileData.foto_url} onChange={e => setProfileData({ ...profileData, foto_url: e.target.value })} />
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>URL da Foto (opcional se fez upload)</label>
+                            <input className="input-field" placeholder="https://..." value={profileData.foto_url} onChange={e => {
+                                setProfileData({ ...profileData, foto_url: e.target.value });
+                                if (e.target.value) setPreviewUrl(e.target.value);
+                            }} />
                         </div>
+
                         <div>
                             <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Sobre Você</label>
                             <textarea className="input-field" placeholder="Conte sua história..." value={profileData.info} onChange={e => setProfileData({ ...profileData, info: e.target.value })} style={{ minHeight: '80px' }} />
@@ -131,7 +186,7 @@ const DashboardStudent = () => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}><Save size={18} /> SALVAR ALTERAÇÕES</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}><Save size={18} /> SALVAR ALTERAÇÕES</button>
                             <button type="button" onClick={() => setShowProfileEdit(false)} className="btn glass-card" style={{ flex: 1 }}>CANCELAR</button>
                         </div>
                     </form>
@@ -148,7 +203,7 @@ const DashboardStudent = () => {
             {professor && (
                 <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '4px solid var(--secondary)', flexShrink: 0 }}>
-                        {professor.foto_url ? <img src={professor.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={60} style={{ margin: '30px', color: 'var(--text-muted)' }} />}
+                        {professor.foto_url ? <img src={getFullImageUrl(professor.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={60} style={{ margin: '30px', color: 'var(--text-muted)' }} />}
                     </div>
                     <div style={{ flex: 1, minWidth: '300px' }}>
                         <h3 style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Mestre {professor.nome}</h3>
@@ -226,7 +281,7 @@ const DashboardStudent = () => {
                             })}
                             {activities.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
-                                    <BookOpen size size={40} style={{ marginBottom: '1rem' }} />
+                                    <BookOpen size={40} style={{ marginBottom: '1rem' }} />
                                     <p>Nenhuma atividade lançada para sua turma ainda.</p>
                                 </div>
                             )}
@@ -288,7 +343,7 @@ const DashboardStudent = () => {
                                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
                                             <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                                 <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
-                                                    {r.foto_url ? <img src={r.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={14} style={{ margin: '8px' }} />}
+                                                    {r.foto_url ? <img src={getFullImageUrl(r.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={14} style={{ margin: '8px' }} />}
                                                 </div>
                                                 <span style={{ fontWeight: r.id === user?.id ? '900' : 'normal' }}>
                                                     {r.nome} {r.id === user?.id && '(VOCÊ)'}

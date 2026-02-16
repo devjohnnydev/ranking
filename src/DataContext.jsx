@@ -226,6 +226,18 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
       return await res.json();
     },
+    uploadFile: async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Falha no upload");
+      return result.url;
+    },
     sendMessage: async (data) => {
       const res = await authFetch(`${API_URL}/mensagens`, {
         method: 'POST',

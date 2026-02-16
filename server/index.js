@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +35,25 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Multer configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage });
+
+// Serve public directory statically
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -81,6 +102,12 @@ async function initAdmin() {
     }
 }
 initAdmin().catch(console.error);
+
+app.post('/api/upload', authenticate, upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+    const fileUrl = `/public/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl });
+});
 
 // --- AUTH ROUTES ---
 
