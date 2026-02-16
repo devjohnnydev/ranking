@@ -375,18 +375,18 @@ const DashboardAdmin = () => {
                                     <tbody>
                                         {filteredRanking.map((r, i) => (
                                             <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                                                     {i + 1}º
                                                     {r.posicao_anterior && (
-                                                        <>
-                                                            {(i + 1) < r.posicao_anterior ? (
-                                                                <TrendingUp size={16} color="var(--success)" title={`Subiu ${r.posicao_anterior - (i + 1)} posições`} />
-                                                            ) : (i + 1) > r.posicao_anterior ? (
-                                                                <TrendingDown size={16} color="var(--danger)" title={`Caiu ${(i + 1) - r.posicao_anterior} posições`} />
+                                                        <span style={{ marginLeft: '8px' }}>
+                                                            {i + 1 < r.posicao_anterior ? (
+                                                                <TrendingUp size={16} color="var(--success)" />
+                                                            ) : i + 1 > r.posicao_anterior ? (
+                                                                <TrendingDown size={16} color="var(--danger)" />
                                                             ) : (
                                                                 <Minus size={16} color="var(--text-muted)" opacity={0.3} />
                                                             )}
-                                                        </>
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>

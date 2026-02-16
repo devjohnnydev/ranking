@@ -117,10 +117,12 @@ const DashboardStudent = () => {
         if (!user || !filteredRanking.length) return null;
         const currentRank = filteredRanking.findIndex(r => r.id === user.id) + 1;
         const myData = filteredRanking.find(r => r.id === user.id);
-        if (!myData || !myData.posicao_anterior || currentRank === 0) return null;
+        if (!myData || currentRank === 0) return null;
 
-        const diff = myData.posicao_anterior - currentRank;
-        return { diff, currentRank, prevRank: myData.posicao_anterior };
+        // If no previous position, assume it's the same
+        const prevRank = myData.posicao_anterior || currentRank;
+        const diff = prevRank - currentRank;
+        return { diff, currentRank, prevRank };
     }, [filteredRanking, user]);
 
     return (
@@ -279,25 +281,45 @@ const DashboardStudent = () => {
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
-                {rankingTrend && rankingTrend.diff !== 0 && (
+                {rankingTrend && (
                     <div className="glass-card" style={{
-                        padding: '1rem 1.5rem',
+                        padding: '1.5rem',
                         marginBottom: '2rem',
-                        background: rankingTrend.diff > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        borderLeft: `4px solid ${rankingTrend.diff > 0 ? 'var(--success)' : 'var(--danger)'}`,
+                        background: rankingTrend.diff > 0 ? 'rgba(34, 197, 94, 0.1)' : rankingTrend.diff < 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 232, 31, 0.05)',
+                        borderLeft: `6px solid ${rankingTrend.diff > 0 ? 'var(--success)' : rankingTrend.diff < 0 ? 'var(--danger)' : 'var(--primary)'}`,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '1rem'
+                        gap: '1.5rem',
+                        animation: 'slideIn 0.5s ease-out'
                     }}>
-                        {rankingTrend.diff > 0 ? <TrendingUp color="var(--success)" /> : <TrendingDown color="var(--danger)" />}
+                        <div style={{
+                            background: rankingTrend.diff > 0 ? 'var(--success)' : rankingTrend.diff < 0 ? 'var(--danger)' : 'var(--primary)',
+                            padding: '12px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'black'
+                        }}>
+                            {rankingTrend.diff > 0 ? <TrendingUp size={24} strokeWidth={3} /> : rankingTrend.diff < 0 ? <TrendingDown size={24} strokeWidth={3} /> : <Minus size={24} strokeWidth={3} />}
+                        </div>
                         <div>
-                            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1rem' }}>
+                            <p style={{ margin: 0, fontWeight: '900', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                                 {rankingTrend.diff > 0
-                                    ? `Parabéns! Você subiu ${rankingTrend.diff} ${rankingTrend.diff === 1 ? 'posição' : 'posições'} no ranking!`
-                                    : `Atenção! Você caiu ${Math.abs(rankingTrend.diff)} ${Math.abs(rankingTrend.diff) === 1 ? 'posição' : 'posições'} no ranking.`}
+                                    ? `UAU! VOCÊ SUBIU ${rankingTrend.diff} ${rankingTrend.diff === 1 ? 'POSIÇÃO' : 'POSIÇÕES'}!`
+                                    : rankingTrend.diff < 0
+                                        ? `ATENÇÃO! VOCÊ CAIU ${Math.abs(rankingTrend.diff)} ${Math.abs(rankingTrend.diff) === 1 ? 'POSIÇÃO' : 'POSIÇÕES'}`
+                                        : `VOCÊ MANTEVE SEU RANK!`}
                             </p>
-                            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>
-                                Suas atividades e o desempenho dos seus colegas mudaram o Hall da Fama!
+                            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.95rem', opacity: 0.9, fontWeight: '500' }}>
+                                {rankingTrend.diff > 0
+                                    ? "O topo está cada vez mais perto! Continue com esse ritmo épico!"
+                                    : rankingTrend.diff < 0
+                                        ? "Não baixe a guarda! A jornada de um herói é feita de superação. Vamos recuperar?"
+                                        : "Estabilidade é sinal de foco. Que tal uma missão extra para escalar o Hall da Fama?"}
+                            </p>
+                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', opacity: 0.6 }}>
+                                Posição Atual: <strong style={{ color: 'white' }}>{rankingTrend.currentRank}º</strong> | Anterior: <strong style={{ color: 'white' }}>{rankingTrend.prevRank}º</strong>
                             </p>
                         </div>
                     </div>

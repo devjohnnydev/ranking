@@ -11,6 +11,7 @@
   --glass-border: rgba(255, 232, 31, 0.3);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   --success: #4ade80;
+  --danger: #ef4444;
   --warning: #FFE81F;
   --font-game: 'Inter', system-ui, -apple-system, sans-serif;
 }
