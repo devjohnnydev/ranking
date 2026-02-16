@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus, Trash2 } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
-        createClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword
+        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -103,6 +103,18 @@ const DashboardAdmin = () => {
             alert('Mensagem enviada!');
         } catch (err) {
             alert('Erro ao enviar mensagem');
+        }
+    };
+
+    const handleDeleteTurma = async () => {
+        if (!selectedClass) return;
+        if (window.confirm(`ATENÇÃO: Deseja realmente excluir a guilda "${selectedClass.nome}"? Isso excluirá todos os alunos, notas e tudo vinculado a ela permanentemente!`)) {
+            try {
+                await deleteClass(selectedClass.id);
+                alert('Guilda excluída com sucesso!');
+            } catch (err) {
+                alert('Erro ao excluir guilda: ' + err.message);
+            }
         }
     };
 
@@ -224,9 +236,19 @@ const DashboardAdmin = () => {
 
             {selectedClass && (
                 <div className="glass-card" style={{ padding: '1rem 2rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--secondary)' }}>
-                    <div>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CÓDIGO DE ACESSO</p>
-                        <h2 style={{ letterSpacing: '2px', color: 'var(--warning)' }}>{selectedClass.codigo}</h2>
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                        <div>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CÓDIGO DE ACESSO</p>
+                            <h2 style={{ letterSpacing: '2px', color: 'var(--warning)' }}>{selectedClass.codigo}</h2>
+                        </div>
+                        <div style={{ height: '40px', width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                        <button
+                            onClick={handleDeleteTurma}
+                            className="btn"
+                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '0.5rem 1rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                        >
+                            <Trash2 size={14} /> EXCLUIR GUILDA
+                        </button>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                         <h3 style={{ margin: 0 }}>{selectedClass.nome}</h3>

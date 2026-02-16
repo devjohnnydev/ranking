@@ -168,6 +168,16 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
       return result;
     },
+    deleteClass: async (id) => {
+      const res = await authFetch(`${API_URL}/turmas/${id}`, {
+        method: 'DELETE'
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setNeedsRefresh(true);
+      setSelectedClass(null);
+      return result;
+    },
     updateProfile: async (data) => {
       const res = await authFetch(`${API_URL}/professor/perfil`, {
         method: 'PATCH', body: JSON.stringify(data)

@@ -248,6 +248,21 @@ app.get('/api/turmas', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHan
     res.json(turmas);
 }));
 
+app.delete('/api/turmas/:id', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const turmaId = parseInt(id);
+
+    const turma = await prisma.turma.findUnique({ where: { id: turmaId } });
+    if (!turma) return res.status(404).json({ error: "Turma não encontrada" });
+
+    if (req.user.role === 'PROFESSOR' && turma.professorId !== req.user.id) {
+        return res.status(403).json({ error: "Você não tem permissão para excluir esta turma" });
+    }
+
+    await prisma.turma.delete({ where: { id: turmaId } });
+    res.json({ message: "Turma e todos os alunos vinculados excluídos com sucesso" });
+}));
+
 app.get('/api/alunos', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
     const { turmaId } = req.query;
     const where = {};
