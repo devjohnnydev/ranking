@@ -525,8 +525,8 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
             info: a.info,
             xp: totalXP,
             level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
-            professorNome: a.professor.nome,
-            turmaNome: a.turma.nome,
+            professorNome: a.professor?.nome || 'Nenhum',
+            turmaNome: a.turma?.nome || 'Nenhuma',
             professorId: a.professorId,
             turmaId: a.turmaId,
             posicao_anterior: a.posicao_anterior
