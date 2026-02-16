@@ -1,13 +1,42 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll
+        user, logout, ranking, loading, refreshAll, updateStudentProfile
     } = useData();
 
     const [tab, setTab] = useState('ranking');
+    const [showProfileEdit, setShowProfileEdit] = useState(false);
+
+    const [profileData, setProfileData] = useState({
+        nome: user?.nome || '',
+        foto_url: user?.foto_url || '',
+        info: user?.info || ''
+    });
+
+    useEffect(() => {
+        if (user) {
+            setProfileData({
+                nome: user.nome || '',
+                foto_url: user.foto_url || '',
+                info: user.info || ''
+            });
+        }
+    }, [user]);
+
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        try {
+            await updateStudentProfile(profileData);
+            setShowProfileEdit(false);
+            alert('Perfil atualizado com sucesso!');
+            refreshAll();
+        } catch (err) {
+            alert('Falha ao atualizar perfil: ' + err.message);
+        }
+    };
 
     const myStats = useMemo(() => {
         if (!user || !ranking) return { xp: 0, level: 1 };
@@ -27,12 +56,18 @@ const DashboardStudent = () => {
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ position: 'relative' }}>
+                    <div
+                        onClick={() => setShowProfileEdit(true)}
+                        style={{ position: 'relative', cursor: 'pointer' }}
+                    >
                         <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', background: 'rgba(255,255,255,0.05)' }}>
-                            <UserIcon size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />
+                            {user?.foto_url ? <img src={user.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
                         </div>
                         <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: 'var(--primary)', color: 'black', padding: '4px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>
                             LVL {level}
+                        </div>
+                        <div style={{ position: 'absolute', top: '0', right: '0', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '4px' }}>
+                            <Settings size={14} color="white" />
                         </div>
                     </div>
                     <div>
@@ -52,6 +87,39 @@ const DashboardStudent = () => {
                     </button>
                 </div>
             </header>
+
+            {showProfileEdit && (
+                <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto' }}>
+                    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Camera size={20} /> Editar Perfil de Aventureiro
+                    </h3>
+                    <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '1.2rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Nome de Aventureiro</label>
+                            <input className="input-field" placeholder="Seu Nome" value={profileData.nome} onChange={e => setProfileData({ ...profileData, nome: e.target.value })} required />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>URL da Foto de Perfil</label>
+                            <input className="input-field" placeholder="https://..." value={profileData.foto_url} onChange={e => setProfileData({ ...profileData, foto_url: e.target.value })} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Sobre Você / Bio</label>
+                            <textarea className="input-field" placeholder="Conte sua história..." value={profileData.info} onChange={e => setProfileData({ ...profileData, info: e.target.value })} style={{ minHeight: '100px' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}><Save size={18} /> SALVAR PERFIL</button>
+                            <button type="button" onClick={() => setShowProfileEdit(false)} className="btn glass-card" style={{ flex: 1 }}>CANCELAR</button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {!showProfileEdit && user?.info && (
+                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '3rem', background: 'rgba(255,255,255,0.02)' }}>
+                    <h4 style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Minha Jornada</h4>
+                    <p style={{ lineHeight: '1.6' }}>{user.info}</p>
+                </div>
+            )}
 
             {professor && (
                 <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -120,8 +188,13 @@ const DashboardStudent = () => {
                                             background: r.id === user?.id ? 'rgba(255, 232, 31, 0.05)' : 'transparent'
                                         }}>
                                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
-                                            <td style={{ padding: '1rem', fontWeight: r.id === user?.id ? '900' : 'normal' }}>
-                                                {r.nome} {r.id === user?.id && '(VOCÊ)'}
+                                            <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                                                    {r.foto_url ? <img src={r.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={14} style={{ margin: '8px' }} />}
+                                                </div>
+                                                <span style={{ fontWeight: r.id === user?.id ? '900' : 'normal' }}>
+                                                    {r.nome} {r.id === user?.id && '(VOCÊ)'}
+                                                </span>
                                             </td>
                                             <td style={{ padding: '1rem', color: 'var(--primary)', fontWeight: 'bold' }}>{r.professorNome}</td>
                                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{r.xp}</td>

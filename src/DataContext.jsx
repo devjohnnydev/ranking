@@ -159,6 +159,15 @@ export const DataProvider = ({ children }) => {
       setUser(prev => ({ ...prev, ...result }));
       return result;
     },
+    updateStudentProfile: async (data) => {
+      const res = await authFetch(`${API_URL}/aluno/perfil`, {
+        method: 'PATCH', body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setUser(prev => ({ ...prev, ...result }));
+      return result;
+    },
     addActivity: async (a) => {
       if (!selectedClass) throw new Error("Selecione uma turma");
       const res = await authFetch(`${API_URL}/atividades`, {

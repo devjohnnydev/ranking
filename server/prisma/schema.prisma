@@ -54,6 +54,10 @@ model Aluno {
   nome         String
   data_criacao DateTime @default(now())
   
+  // Perfil do Aluno
+  foto_url     String?   @db.Text
+  info         String?   @db.Text
+  
   professor    Professor @relation("ProfessorAlunos", fields: [professorId], references: [id], onDelete: Cascade)
   professorId  Int
   

@@ -312,6 +312,8 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
         return {
             id: a.id,
             nome: a.nome,
+            foto_url: a.foto_url,
+            info: a.info,
             xp: totalXP,
             level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
             professorNome: a.professor.nome,
@@ -320,6 +322,15 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
     }).sort((a, b) => b.xp - a.xp);
 
     res.json(ranking);
+}));
+
+app.patch('/api/aluno/perfil', authenticate, authorize(['ALUNO']), asyncHandler(async (req, res) => {
+    const { foto_url, info, nome } = req.body;
+    const updated = await prisma.aluno.update({
+        where: { id: req.user.id },
+        data: { foto_url, info, nome }
+    });
+    res.json(updated);
 }));
 
 // --- APP SETUP ---
