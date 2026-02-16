@@ -87,21 +87,43 @@ initAdmin().catch(console.error);
 app.post('/api/auth/login', asyncHandler(async (req, res) => {
     const { email, password, nome, codigo } = req.body;
 
-    // 1. Aluno Login (Nome + Código)
+    // 1. Aluno Entry (Nome + Código) - Seamless login/registration
     if (nome && codigo) {
-        const student = await prisma.aluno.findFirst({
+        const normalizedCode = codigo.trim().toUpperCase();
+
+        // Find the class first
+        const turma = await prisma.turma.findUnique({
+            where: { codigo: normalizedCode },
+            include: { professor: true }
+        });
+
+        if (!turma) {
+            return res.status(404).json({ error: 'Código de turma inválido' });
+        }
+
+        // Find or Create the student in this class
+        let student = await prisma.aluno.findFirst({
             where: {
                 nome: { equals: nome, mode: 'insensitive' },
-                turma: { codigo: { equals: codigo.trim().toUpperCase(), mode: 'insensitive' } }
+                turmaId: turma.id
             },
             include: { professor: true, turma: true }
         });
 
-        if (student) {
-            const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
-            return res.json({ token, user: { ...student, role: 'ALUNO' } });
+        if (!student) {
+            student = await prisma.aluno.create({
+                data: {
+                    nome,
+                    professorId: turma.professorId,
+                    turmaId: turma.id
+                },
+                include: { professor: true, turma: true }
+            });
+            console.log(`New student registered: ${nome} in class ${turma.nome}`);
         }
-        return res.status(401).json({ error: 'Dados do aluno ou código da turma inválidos' });
+
+        const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
+        return res.json({ token, user: { ...student, role: 'ALUNO' } });
     }
 
     // 2. Admin Login

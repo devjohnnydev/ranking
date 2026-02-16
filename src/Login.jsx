@@ -148,12 +148,18 @@ const Login = () => {
                             )}
 
                             <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', padding: '1rem', gap: '0.5rem' }}>
-                                {role === 'ALUNO' ? 'ENTRAR NO RANKING' : 'ACESSAR PAINEL'}
+                                {role === 'ALUNO' ? 'ENTRAR AGORA' : 'ACESSAR PAINEL'}
                                 <LogIn size={18} />
                             </button>
                         </div>
                     )}
                 </form>
+
+                {role === 'ALUNO' && !mustChange && (
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                        <p><strong>Aventureiro:</strong> Basta digitar seu nome e o código da guilda para entrar. Se for sua primeira vez, criaremos sua ficha automaticamente!</p>
+                    </div>
+                )}
 
                 <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
