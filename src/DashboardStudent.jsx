@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell, Lock, Upload, Image as ImageIcon } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell, Lock, Upload, Image as ImageIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
@@ -100,6 +100,16 @@ const DashboardStudent = () => {
         if (!user?.turmaId) return [];
         return ranking.filter(r => r.turmaId === user.turmaId);
     }, [ranking, user?.turmaId]);
+
+    const rankingTrend = useMemo(() => {
+        if (!user || !filteredRanking.length) return null;
+        const currentRank = filteredRanking.findIndex(r => r.id === user.id) + 1;
+        const myData = filteredRanking.find(r => r.id === user.id);
+        if (!myData || !myData.posicao_anterior || currentRank === 0) return null;
+
+        const diff = myData.posicao_anterior - currentRank;
+        return { diff, currentRank, prevRank: myData.posicao_anterior };
+    }, [filteredRanking, user]);
 
     return (
         <div className="container">
@@ -240,6 +250,30 @@ const DashboardStudent = () => {
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
+                {rankingTrend && rankingTrend.diff !== 0 && (
+                    <div className="glass-card" style={{
+                        padding: '1rem 1.5rem',
+                        marginBottom: '2rem',
+                        background: rankingTrend.diff > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        borderLeft: `4px solid ${rankingTrend.diff > 0 ? 'var(--success)' : 'var(--danger)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem'
+                    }}>
+                        {rankingTrend.diff > 0 ? <TrendingUp color="var(--success)" /> : <TrendingDown color="var(--danger)" />}
+                        <div>
+                            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1rem' }}>
+                                {rankingTrend.diff > 0
+                                    ? `Parabéns! Você subiu ${rankingTrend.diff} ${rankingTrend.diff === 1 ? 'posição' : 'posições'} no ranking!`
+                                    : `Atenção! Você caiu ${Math.abs(rankingTrend.diff)} ${Math.abs(rankingTrend.diff) === 1 ? 'posição' : 'posições'} no ranking.`}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>
+                                Suas atividades e o desempenho dos seus colegas mudaram o Hall da Fama!
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {tab === 'status' && (
                     <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <div className="status-ring" style={{ width: '150px', height: '150px', fontSize: '3.5rem', fontWeight: '900' }}>
@@ -345,7 +379,20 @@ const DashboardStudent = () => {
                                             borderBottom: '1px solid rgba(255,255,255,0.05)',
                                             background: r.id === user?.id ? 'rgba(255, 232, 31, 0.05)' : 'transparent'
                                         }}>
-                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
+                                            <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {i + 1}º
+                                                {r.posicao_anterior && (
+                                                    <>
+                                                        {(i + 1) < r.posicao_anterior ? (
+                                                            <TrendingUp size={16} color="var(--success)" title={`Subiu ${r.posicao_anterior - (i + 1)} posições`} />
+                                                        ) : (i + 1) > r.posicao_anterior ? (
+                                                            <TrendingDown size={16} color="var(--danger)" title={`Caiu ${(i + 1) - r.posicao_anterior} posições`} />
+                                                        ) : (
+                                                            <Minus size={16} color="var(--text-muted)" opacity={0.3} />
+                                                        )}
+                                                    </>
+                                                )}
+                                            </td>
                                             <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                                 <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
                                                     {r.foto_url ? <img src={getFullImageUrl(r.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={14} style={{ margin: '8px' }} />}

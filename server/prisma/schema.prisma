@@ -68,6 +68,7 @@ model Aluno {
   
   notas        Nota[]
   mensagens    Mensagem[] @relation("AlunoMensagens")
+  posicao_anterior Int?
 }
 
 model Atividade {

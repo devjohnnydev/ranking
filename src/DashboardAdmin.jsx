@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
@@ -285,7 +285,20 @@ const DashboardAdmin = () => {
                                     <tbody>
                                         {filteredRanking.map((r, i) => (
                                             <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
+                                                <td style={{ padding: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    {i + 1}º
+                                                    {r.posicao_anterior && (
+                                                        <>
+                                                            {(i + 1) < r.posicao_anterior ? (
+                                                                <TrendingUp size={16} color="var(--success)" title={`Subiu ${r.posicao_anterior - (i + 1)} posições`} />
+                                                            ) : (i + 1) > r.posicao_anterior ? (
+                                                                <TrendingDown size={16} color="var(--danger)" title={`Caiu ${(i + 1) - r.posicao_anterior} posições`} />
+                                                            ) : (
+                                                                <Minus size={16} color="var(--text-muted)" opacity={0.3} />
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </td>
                                                 <td style={{ padding: '1rem' }}>{r.nome}</td>
                                                 <td style={{ padding: '1rem', color: 'var(--primary)' }}>{r.turmaNome}</td>
                                                 {user?.role === 'ADMIN' && <td style={{ padding: '1rem', color: 'var(--secondary)' }}>{r.professorNome}</td>}

@@ -390,7 +390,30 @@ app.post('/api/mensagens', authenticate, authorize(['PROFESSOR']), asyncHandler(
 app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
     const { alunoId, atividadeId, valor } = req.body;
 
-    // Get activity info for the notification
+    // Get info about the student and class to update ranks
+    const studentInfo = await prisma.aluno.findUnique({ where: { id: parseInt(alunoId) } });
+    if (!studentInfo) return res.status(404).json({ error: "Aluno não encontrado" });
+
+    // 1. Snapshot current ranking for the whole class before the change
+    const classAlunos = await prisma.aluno.findMany({
+        where: { turmaId: studentInfo.turmaId },
+        include: { notas: true }
+    });
+
+    const currentRanking = classAlunos.map(a => {
+        const totalXP = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        return { id: a.id, xp: totalXP };
+    }).sort((a, b) => b.xp - a.xp);
+
+    // Save current positions as posicao_anterior
+    for (let i = 0; i < currentRanking.length; i++) {
+        await prisma.aluno.update({
+            where: { id: currentRanking[i].id },
+            data: { posicao_anterior: i + 1 }
+        });
+    }
+
+    // 2. Now update/create the grade
     const atividade = await prisma.atividade.findUnique({ where: { id: parseInt(atividadeId) } });
 
     const grade = await prisma.nota.upsert({
@@ -442,7 +465,8 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
             professorNome: a.professor.nome,
             turmaNome: a.turma.nome,
             professorId: a.professorId,
-            turmaId: a.turmaId
+            turmaId: a.turmaId,
+            posicao_anterior: a.posicao_anterior
         };
     }).sort((a, b) => b.xp - a.xp);
 
