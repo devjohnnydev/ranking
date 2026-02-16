@@ -440,7 +440,9 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
             xp: totalXP,
             level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
             professorNome: a.professor.nome,
-            turmaNome: a.turma.nome
+            turmaNome: a.turma.nome,
+            professorId: a.professorId,
+            turmaId: a.turmaId
         };
     }).sort((a, b) => b.xp - a.xp);
 

@@ -95,6 +95,12 @@ const DashboardStudent = () => {
     const professor = user?.professor;
     const turma = user?.turma;
 
+    // Filter ranking to show only classmates
+    const filteredRanking = useMemo(() => {
+        if (!user?.turmaId) return [];
+        return ranking.filter(r => r.turmaId === user.turmaId);
+    }, [ranking, user?.turmaId]);
+
     return (
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -225,7 +231,7 @@ const DashboardStudent = () => {
             )}
 
             <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Hall da Fama</button>
+                <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Ranking da Guilda</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`} style={{ flex: 1 }}><BookOpen size={18} /> Minhas Notas</button>
                 <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`} style={{ flex: 1, position: 'relative' }}>
                     <Bell size={18} /> {messages.length > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{messages.length}</span>} Murais de Recados
@@ -323,19 +329,18 @@ const DashboardStudent = () => {
 
                 {tab === 'ranking' && (
                     <div>
-                        <h3 style={{ marginBottom: '2rem' }}>Hall da Fama (Líderes da Guilda)</h3>
+                        <h3 style={{ marginBottom: '2rem' }}>Hall da Fama (Membros da Guilda)</h3>
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}>
                                         <th style={{ padding: '1rem' }}>RANK</th>
                                         <th style={{ padding: '1rem' }}>AVENTUREIRO</th>
-                                        <th style={{ padding: '1rem' }}>MESTRE RESPONSÁVEL</th>
                                         <th style={{ padding: '1rem' }}>XP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {ranking.map((r, i) => (
+                                    {filteredRanking.map((r, i) => (
                                         <tr key={r.id} style={{
                                             borderBottom: '1px solid rgba(255,255,255,0.05)',
                                             background: r.id === user?.id ? 'rgba(255, 232, 31, 0.05)' : 'transparent'
@@ -349,10 +354,12 @@ const DashboardStudent = () => {
                                                     {r.nome} {r.id === user?.id && '(VOCÊ)'}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '1rem', color: 'var(--primary)', fontWeight: 'bold' }}>{r.professorNome}</td>
                                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>{r.xp}</td>
                                         </tr>
                                     ))}
+                                    {filteredRanking.length === 0 && (
+                                        <tr><td colSpan="3" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Nenhum aventureiro encontrado na sua guilda ainda.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

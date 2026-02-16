@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
@@ -27,6 +27,9 @@ const DashboardAdmin = () => {
     // Messaging state
     const [msgTarget, setMsgTarget] = useState('turma'); // 'turma' or alumnoId
     const [msgContent, setMsgContent] = useState('');
+
+    // Admin filters
+    const [adminFilterProfessor, setAdminFilterProfessor] = useState('all');
 
     useEffect(() => {
         if (user) {
@@ -118,6 +121,30 @@ const DashboardAdmin = () => {
     const filteredActivities = activities.filter(a => !selectedClass || a.turmaId === selectedClass.id);
     const filteredMessages = messages.filter(m => !selectedClass || m.turmaId === selectedClass.id || (m.aluno && filteredStudents.some(s => s.id === m.alunoId)));
 
+    // Ranking filtering logic
+    const filteredRanking = useMemo(() => {
+        if (user?.role === 'ADMIN') {
+            if (adminFilterProfessor === 'all') return ranking;
+            return ranking.filter(r => r.professorId === parseInt(adminFilterProfessor));
+        }
+        // For PROFESSOR, filter by selected class
+        if (!selectedClass) return [];
+        return ranking.filter(r => r.turmaId === selectedClass.id);
+    }, [ranking, user?.role, adminFilterProfessor, selectedClass]);
+
+    const professorsList = useMemo(() => {
+        if (user?.role !== 'ADMIN') return [];
+        const uniqueProfessors = [];
+        const map = new Map();
+        for (const item of ranking) {
+            if (!map.has(item.professorId)) {
+                map.set(item.professorId, true);
+                uniqueProfessors.push({ id: item.professorId, nome: item.professorNome });
+            }
+        }
+        return uniqueProfessors;
+    }, [ranking, user?.role]);
+
     return (
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -130,7 +157,7 @@ const DashboardAdmin = () => {
                     </div>
                     <div>
                         <h1 style={{ fontSize: '1.8rem', color: 'var(--primary)', textTransform: 'uppercase' }}>RANKING SENAI</h1>
-                        <h2 style={{ fontSize: '1.1rem', color: 'var(--secondary)' }}>Mestre {user?.nome}</h2>
+                        <h2 style={{ fontSize: '1.1rem', color: 'var(--secondary)' }}>{user?.role === 'ADMIN' ? 'Administrador Supremo' : `Mestre ${user?.nome}`}</h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                             <div className="glass-card" style={{ padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <BookOpen size={16} color="var(--primary)" />
@@ -147,9 +174,11 @@ const DashboardAdmin = () => {
                                     {classes.map(c => <option key={c.id} value={c.id} style={{ color: 'black' }}>{c.nome}</option>)}
                                 </select>
                             </div>
-                            <button onClick={() => setShowNewClass(true)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
-                                <Plus size={16} /> NOVA TURMA
-                            </button>
+                            {user?.role !== 'ADMIN' && (
+                                <button onClick={() => setShowNewClass(true)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
+                                    <Plus size={16} /> NOVA TURMA
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -215,27 +244,58 @@ const DashboardAdmin = () => {
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
                 {tab === 'ranking' && (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}>
-                                    <th style={{ padding: '1rem' }}>REDAÇÃO</th>
-                                    <th style={{ padding: '1rem' }}>ALUNO</th>
-                                    <th style={{ padding: '1rem' }}>GUILDA (TURMA)</th>
-                                    <th style={{ padding: '1rem' }}>XP TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ranking.map((r, i) => (
-                                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
-                                        <td style={{ padding: '1rem' }}>{r.nome}</td>
-                                        <td style={{ padding: '1rem', color: 'var(--primary)' }}>{r.turmaNome}</td>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{r.xp} XP</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div>
+                        {user?.role === 'ADMIN' && (
+                            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div className="glass-card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Filter size={16} color="var(--primary)" />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Filtrar por Mestre:</span>
+                                    <select
+                                        className="input-field"
+                                        style={{ width: 'auto', padding: '0.2rem', marginBottom: 0 }}
+                                        value={adminFilterProfessor}
+                                        onChange={e => setAdminFilterProfessor(e.target.value)}
+                                    >
+                                        <option value="all">TODOS OS MESTRES</option>
+                                        {professorsList.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                                    </select>
+                                </div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                    Mostrando {filteredRanking.length} aventureiros
+                                </div>
+                            </div>
+                        )}
+                        {!selectedClass && user?.role !== 'ADMIN' ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
+                                <Trophy size={40} style={{ marginBottom: '1rem' }} />
+                                <p>Selecione uma turma para ver o ranking regional.</p>
+                            </div>
+                        ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ textAlign: 'left', color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}>
+                                            <th style={{ padding: '1rem' }}>POSIÇÃO</th>
+                                            <th style={{ padding: '1rem' }}>ALUNO</th>
+                                            <th style={{ padding: '1rem' }}>GUILDA (TURMA)</th>
+                                            {user?.role === 'ADMIN' && <th style={{ padding: '1rem' }}>MESTRE</th>}
+                                            <th style={{ padding: '1rem' }}>XP TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredRanking.map((r, i) => (
+                                            <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{i + 1}º</td>
+                                                <td style={{ padding: '1rem' }}>{r.nome}</td>
+                                                <td style={{ padding: '1rem', color: 'var(--primary)' }}>{r.turmaNome}</td>
+                                                {user?.role === 'ADMIN' && <td style={{ padding: '1rem', color: 'var(--secondary)' }}>{r.professorNome}</td>}
+                                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{r.xp} XP</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -266,7 +326,7 @@ const DashboardAdmin = () => {
                                         </tr>
                                     ))}
                                     {filteredStudents.length === 0 && (
-                                        <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Nenhum aluno encontrado para esta turma.</td></tr>
+                                        <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>{selectedClass ? 'Nenhum aluno encontrado para esta turma.' : 'Selecione uma turma para ver os alunos.'}</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -287,8 +347,9 @@ const DashboardAdmin = () => {
                                     <label style={{ fontSize: '0.8rem', opacity: 0.7 }}>Nota Máxima</label>
                                     <input className="input-field" type="number" value={newActivity.nota_maxima} onChange={e => setNewActivity({ ...newActivity, nota_maxima: e.target.value })} />
                                 </div>
-                                <button type="submit" className="btn btn-primary">LANÇAR MURAL</button>
+                                <button type="submit" className="btn btn-primary" disabled={!selectedClass}>LANÇAR MISSÃO</button>
                             </form>
+                            {!selectedClass && <p style={{ color: 'var(--danger)', fontSize: '0.7rem', marginTop: '0.5rem' }}>* Selecione uma turma primeiro para lançar atividades.</p>}
                         </div>
 
                         <div>
@@ -304,6 +365,7 @@ const DashboardAdmin = () => {
                                         {a.titulo}
                                     </button>
                                 ))}
+                                {filteredActivities.length === 0 && <p style={{ opacity: 0.5, fontSize: '0.9rem' }}>{selectedClass ? 'Nenhuma atividade lançada para esta turma.' : 'Selecione uma turma para ver as missões.'}</p>}
                             </div>
 
                             {selectedActivity && (
@@ -357,14 +419,14 @@ const DashboardAdmin = () => {
                                 <div>
                                     <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Para quem?</label>
                                     <select className="input-field" value={msgTarget} onChange={e => setMsgTarget(e.target.value)} style={{ padding: '0.5rem' }}>
-                                        <option value="turma">📣 Todos da Turma Atual</option>
+                                        <option value="turma">📣 Todos da Turma Selecionada</option>
                                         <optgroup label="Alunos Individuais">
                                             {filteredStudents.map(s => <option key={s.id} value={s.id}>👤 {s.nome}</option>)}
                                         </optgroup>
                                     </select>
                                 </div>
                                 <textarea className="input-field" placeholder="Escreva sua mensagem aqui..." value={msgContent} onChange={e => setMsgContent(e.target.value)} style={{ minHeight: '120px' }} />
-                                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>ENVIAR MENSAGEM</button>
+                                <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={!selectedClass && msgTarget === 'turma'}>ENVIAR MENSAGEM</button>
                             </form>
                         </div>
                         <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
@@ -381,7 +443,7 @@ const DashboardAdmin = () => {
                                         <p style={{ fontSize: '0.9rem', margin: 0 }}>{m.conteudo}</p>
                                     </div>
                                 ))}
-                                {filteredMessages.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5 }}>Nenhuma mensagem enviada.</p>}
+                                {filteredMessages.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5 }}>{selectedClass ? 'Nenhuma mensagem enviada nesta turma.' : 'Selecione uma turma para ver o histórico.'}</p>}
                             </div>
                         </div>
                     </div>
