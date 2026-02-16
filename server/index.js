@@ -306,6 +306,9 @@ app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
     const existing = await prisma.aluno.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: "E-mail já cadastrado" });
 
+    const turma = await prisma.turma.findUnique({ where: { codigo: normalizedCode } });
+    if (!turma) return res.status(404).json({ error: "Código de turma inválido" });
+
     const hashedPass = await bcrypt.hash(password, 10);
 
     const aluno = await prisma.aluno.create({
