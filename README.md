@@ -41,6 +41,7 @@ EduGame é uma plataforma educacional inovadora que utiliza elementos de gamific
 - **Aprovação de Matrículas**: Controle de quais alunos podem entrar na turma.
 - **Criação de Missões e Atividades**: Definição de tarefas com pontuações máximas e prazos.
 - **Lançamento de Notas**: Sistema de correção que gera XP automaticamente para os alunos.
+- **Remoção de Alunos**: Opção para excluir alunos da guilda (turma) permanentemente.
 - **Comunicação**: Envio de mensagens automáticas sobre notas e avisos.
 
 ### 4. Experiência do Aluno

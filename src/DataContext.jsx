@@ -236,6 +236,14 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
       return await res.json();
     },
+    deleteStudent: async (id) => {
+      const res = await authFetch(`${API_URL}/alunos/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error("Falha ao excluir aluno");
+      setNeedsRefresh(true);
+      return await res.json();
+    },
     uploadFile: async (file) => {
       const formData = new FormData();
       formData.append('file', file);

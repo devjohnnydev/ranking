@@ -280,6 +280,21 @@ app.get('/api/alunos', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHan
     res.json(alunos);
 }));
 
+app.delete('/api/alunos/:id', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const alunoId = parseInt(id);
+
+    const aluno = await prisma.aluno.findUnique({ where: { id: alunoId } });
+    if (!aluno) return res.status(404).json({ error: "Aluno não encontrado" });
+
+    if (req.user.role === 'PROFESSOR' && aluno.professorId !== req.user.id) {
+        return res.status(403).json({ error: "Você não tem permissão para excluir este aluno" });
+    }
+
+    await prisma.aluno.delete({ where: { id: alunoId } });
+    res.json({ message: "Aluno removido com sucesso" });
+}));
+
 // Aluno registration
 app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
     const { nome, email, password, codigo } = req.body;

@@ -6,7 +6,7 @@ const DashboardAdmin = () => {
     const {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
-        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, uploadFile
+        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, deleteStudent, uploadFile
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -157,6 +157,17 @@ const DashboardAdmin = () => {
                 alert('Senha resetada com sucesso para senai123');
             } catch (err) {
                 alert('Erro ao resetar senha');
+            }
+        }
+    };
+
+    const handleDeleteStudent = async (id, nome) => {
+        if (window.confirm(`Deseja realmente excluir o aluno ${nome} da turma? Esta ação não pode ser desfeita.`)) {
+            try {
+                await deleteStudent(id);
+                alert('Aluno excluído com sucesso!');
+            } catch (err) {
+                alert('Erro ao excluir aluno: ' + err.message);
             }
         }
     };
@@ -420,9 +431,12 @@ const DashboardAdmin = () => {
                                             </td>
                                             <td style={{ padding: '1rem', opacity: 0.8 }}>{s.email || '—'}</td>
                                             <td style={{ padding: '1rem' }}>{s.turma?.nome}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <button onClick={() => handleResetPassword(s.id, s.nome)} className="btn glass-card" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', color: 'var(--warning)', gap: '0.4rem' }}>
+                                            <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => handleResetPassword(s.id, s.nome)} className="btn glass-card" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     <ShieldAlert size={14} /> RESETAR SENHA
+                                                </button>
+                                                <button onClick={() => handleDeleteStudent(s.id, s.nome)} className="btn glass-card" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <Trash2 size={14} /> EXCLUIR
                                                 </button>
                                             </td>
                                         </tr>

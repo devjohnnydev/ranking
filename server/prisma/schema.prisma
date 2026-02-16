@@ -28,7 +28,6 @@ model Professor {
   mensagem_incentivo  String?   @db.Text
   
   turmas              Turma[]
-  alunos              Aluno[]   @relation("ProfessorAlunos")
   missoes_criadas     Missao[]
   mensagens_enviadas  Mensagem[]
 }
@@ -60,11 +59,7 @@ model Aluno {
   foto_url     String?   @db.Text
   info         String?   @db.Text
   
-  professor    Professor @relation("ProfessorAlunos", fields: [professorId], references: [id], onDelete: Cascade)
-  professorId  Int
-  
-  turma        Turma    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
-  turmaId      Int
+  turmas       Turma[]
   
   notas        Nota[]
   mensagens    Mensagem[] @relation("AlunoMensagens")
