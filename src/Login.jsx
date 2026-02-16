@@ -84,20 +84,21 @@ const Login = () => {
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}>
                         {view === 'login' ? 'ENTRAR' : 'CONCLUIR CADASTRO'} {view === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
                     </button>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 'bold', textAlign: 'center', marginTop: '1rem' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
                 </form>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     {view === 'login' ? (
                         <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('register')}>
-                            <span style={{ color: '#000000', fontWeight: 'bold' }}>Não tem conta?</span> <span style={{ color: '#000000', marginLeft: '4px', fontWeight: 'bold' }}>Cadastrar como Aluno</span>
+                            <span style={{ color: '#000000', fontWeight: 'bold' }}>Não tem conta?</span> <span style={{ color: 'var(--primary)', marginLeft: '4px', fontWeight: 'bold' }}>Cadastrar como Aluno</span>
                         </button>
                     ) : (
                         <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('login')}>
-                            <ArrowLeft size={16} color="#000000" /> <span style={{ color: '#000000', fontWeight: 'bold' }}>Voltar para Login</span>
+                            <ArrowLeft size={16} color="#000000" /> <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Voltar para Login</span>
                         </button>
                     )}
                 </div>
+
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 'bold', textAlign: 'center', marginTop: '1.5rem' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
             </div>
         </div>
     );

@@ -230,4 +230,10 @@ button {
   .container {
     padding: 1.5rem 1rem;
   }
+  .glass-card {
+    padding: 1.5rem !important;
+  }
+  h1 {
+    font-size: 2.2rem !important;
+  }
 }
