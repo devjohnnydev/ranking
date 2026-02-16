@@ -1,35 +1,32 @@
-# EduGame
+# PlayGame (Jogo) - Educational Gamification Platform
 
 ## Overview
-EduGame is a gamified education platform built with React (Vite) frontend and Express.js backend. It supports multiple user roles (Super Admin, Teacher, Student) with class management, activities, grading, rankings, and messaging.
+PlayGame is a gamified educational platform built with React (Vite) frontend and Express.js backend, using Prisma ORM with PostgreSQL. It supports teachers managing classes, activities, missions, grades, and student enrollments with a game-like XP/ranking system. The interface is in Portuguese (Brazilian).
 
 ## Project Architecture
-- **Frontend**: React 19 with Vite, served on port 5000 (dev)
-- **Backend**: Express.js API server on port 3001
+- **Frontend**: React 19 with Vite 7, Framer Motion, Lucide React icons
+- **Backend**: Express 5 (ESM modules) on port 3001
 - **Database**: PostgreSQL via Prisma ORM
-- **Styling**: CSS with Framer Motion animations
+- **Schema**: server/prisma/schema.prisma
+- **Vite Config**: vite.config.js (port 5000, proxies /api to backend on 3001)
 
-### Directory Structure
-- `src/` - React frontend source
-- `server/` - Express backend
-- `server/prisma/` - Prisma schema and migrations
-- `public/` - Static assets
+## Key Files
+- `server/index.js` - Express API server with all routes
+- `server/prisma/schema.prisma` - Database schema (User, Class, Enrollment, Activity, Mission, Grade, Message)
+- `vite.config.js` - Vite dev server config
+- `package.json` - Root dependencies (frontend + shared)
+- `server/package.json` - Server dependencies
 
-### Key Files
-- `vite.config.js` - Vite config (proxies /api to backend)
-- `server/index.js` - Express API server
-- `server/prisma/schema.prisma` - Database schema
+## Running
+- Workflow: `PORT=3001 node server/index.js & npm run dev`
+- Frontend: Vite on port 5000
+- Backend: Express on port 3001
+- Vite proxies `/api` requests to backend
 
-## Development
-- Frontend runs on port 5000 (Vite dev server)
-- Backend runs on port 3001 (Express)
-- Vite proxies `/api` requests to the backend
+## Roles
+- **ADMIN**: Super admin (johnny.oliveira@sp.senai.br)
+- **TEACHER**: Manages classes, activities, grades, missions
+- **STUDENT**: Joins classes via code, views grades/missions/ranking
 
-## Database
-- PostgreSQL (Replit managed)
-- Models: User, Class, Enrollment, Activity, Grade, Message
-- Prisma ORM for database access
-
-## Deployment
-- Build: Prisma generate + Vite build
-- Production: Express serves built frontend from `dist/` and handles API routes
+## Recent Changes
+- 2026-02-16: Initial import to Replit environment, installed dependencies, set up PostgreSQL database, pushed Prisma schema
