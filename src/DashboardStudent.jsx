@@ -82,6 +82,17 @@ const DashboardStudent = () => {
         }
     };
 
+    const handleJoinClass = async (e) => {
+        e.preventDefault();
+        try {
+            await joinClass(joinCode);
+            setJoinCode('');
+            alert('Você entrou na guilda com sucesso!');
+        } catch (err) {
+            alert('Falha ao entrar na guilda: ' + err.message);
+        }
+    };
+
     const myStats = useMemo(() => {
         if (!user || !ranking) return { xp: 0, level: 1 };
         return ranking.find(r => r.id === user.id) || { xp: 0, level: 1, nome: user.nome };
