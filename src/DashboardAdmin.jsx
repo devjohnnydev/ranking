@@ -409,20 +409,20 @@ const DashboardAdmin = () => {
                             <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
                                 <Plus size={24} /> Nova Missão de Classe (XP p/ Todos)
                             </h3>
-                            <form onSubmit={handleAddMission} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px 150px', gap: '1rem', alignItems: 'end' }}>
+                            <form onSubmit={handleAddMission} style={{ display: 'grid', gap: '1.2rem' }}>
                                 <div>
                                     <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Título da Missão</label>
                                     <input className="input-field" value={newMission.title} onChange={e => setNewMission({ ...newMission, title: e.target.value })} required />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Instruções</label>
-                                    <input className="input-field" value={newMission.description} onChange={e => setNewMission({ ...newMission, description: e.target.value })} required />
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Descrição da Missão</label>
+                                    <textarea className="input-field" value={newMission.description} onChange={e => setNewMission({ ...newMission, description: e.target.value })} required />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>XP</label>
+                                    <label style={{ fontSize: '0.8rem', color: '#E0E0E0' }}>Recompensa em XP</label>
                                     <input type="number" className="input-field" value={newMission.reward} onChange={e => setNewMission({ ...newMission, reward: parseInt(e.target.value) || 0 })} required />
                                 </div>
-                                <button type="submit" className="btn btn-primary">CRIAR MISSÃO</button>
+                                <button type="submit" className="btn btn-primary">LANÇAR MISSÃO PARA A TURMA</button>
                             </form>
                         </div>
 
