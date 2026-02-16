@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, activities, grades
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -147,6 +147,7 @@ const DashboardStudent = () => {
 
             <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Hall da Fama</button>
+                <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`} style={{ flex: 1 }}><BookOpen size={18} /> Minhas Notas</button>
                 <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Trophy size={18} /> Meu Status</button>
             </nav>
 
@@ -164,6 +165,44 @@ const DashboardStudent = () => {
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
                                 Faltam {Math.max(0, nextLevelXP - xp).toLocaleString()} XP para o próximo nível
                             </p>
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'atividades' && (
+                    <div>
+                        <h3 style={{ marginBottom: '2rem' }}>Minhas Atividades e Avaliações</h3>
+                        <div style={{ display: 'grid', gap: '1.5rem' }}>
+                            {activities.map(activity => {
+                                const myGrade = grades.find(g => g.atividadeId === activity.id);
+                                return (
+                                    <div key={activity.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary)' }}>{activity.titulo}</h4>
+                                            <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>{activity.descricao || 'Sem descrição.'}</p>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            {myGrade ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
+                                                    <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--secondary)' }}>{myGrade.valor} / {activity.nota_maxima}</span>
+                                                    <span style={{ fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold' }}>+ {myGrade.valor * 10} XP GANHOS</span>
+                                                </div>
+                                            ) : (
+                                                <div style={{ opacity: 0.4, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <RefreshCw size={16} />
+                                                    <span>Aguardando Avaliação</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {activities.length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
+                                    <BookOpen size={40} style={{ marginBottom: '1rem' }} />
+                                    <p>Nenhuma atividade lançada para sua turma ainda.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

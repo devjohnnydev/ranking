@@ -60,14 +60,30 @@ export const DataProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Basic data fetch based on role
-      const [resClasses, resRank] = await Promise.all([
+      const promises = [
         authFetch(`${API_URL}/turmas`).then(r => r.json()),
-        authFetch(`${API_URL}/ranking`).then(r => r.json())
-      ]);
+        authFetch(`${API_URL}/ranking`).then(r => r.json()),
+        authFetch(`${API_URL}/atividades`).then(r => r.json())
+      ];
+
+      if (user.role === 'ALUNO') {
+        promises.push(authFetch(`${API_URL}/minhas-notas`).then(r => r.json()));
+      } else if (user.role === 'PROFESSOR' || user.role === 'ADMIN') {
+        promises.push(authFetch(`${API_URL}/alunos`).then(r => r.json()));
+      }
+
+      const [resClasses, resRank, resActivities, resExtra] = await Promise.all(promises);
 
       setClasses(Array.isArray(resClasses) ? resClasses : []);
       setRanking(Array.isArray(resRank) ? resRank : []);
+      setActivities(Array.isArray(resActivities) ? resActivities : []);
+
+      if (user.role === 'ALUNO') {
+        // Map grades to a more accessible format if needed
+        setGrades(resExtra || []);
+      } else {
+        setStudents(Array.isArray(resExtra) ? resExtra : []);
+      }
 
       if (Array.isArray(resClasses) && resClasses.length > 0 && !selectedClass) {
         setSelectedClass(resClasses[0]);

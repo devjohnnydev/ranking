@@ -91,8 +91,8 @@ app.post('/api/auth/login', asyncHandler(async (req, res) => {
     if (nome && codigo) {
         const student = await prisma.aluno.findFirst({
             where: {
-                nome,
-                turma: { codigo: codigo.trim().toUpperCase() }
+                nome: { equals: nome, mode: 'insensitive' },
+                turma: { codigo: { equals: codigo.trim().toUpperCase(), mode: 'insensitive' } }
             },
             include: { professor: true, turma: true }
         });
@@ -276,6 +276,34 @@ app.post('/api/atividades', authenticate, authorize(['PROFESSOR']), asyncHandler
         }
     });
     res.json(atividade);
+}));
+
+app.get('/api/atividades', authenticate, asyncHandler(async (req, res) => {
+    const { turmaId } = req.query;
+    const where = {};
+
+    if (req.user.role === 'PROFESSOR') {
+        where.turma = { professorId: req.user.id };
+    } else if (req.user.role === 'ALUNO') {
+        const student = await prisma.aluno.findUnique({ where: { id: req.user.id } });
+        where.turmaId = student.turmaId;
+    }
+
+    if (turmaId) where.turmaId = parseInt(turmaId);
+
+    const atividades = await prisma.atividade.findMany({
+        where,
+        include: { notas: true }
+    });
+    res.json(atividades);
+}));
+
+app.get('/api/minhas-notas', authenticate, authorize(['ALUNO']), asyncHandler(async (req, res) => {
+    const notas = await prisma.nota.findMany({
+        where: { alunoId: req.user.id },
+        include: { atividade: true }
+    });
+    res.json(notas);
 }));
 
 app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
