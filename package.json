@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npx prisma generate --schema=server/prisma/schema.prisma && vite build",
-    "start": "npx prisma db push --schema=server/prisma/schema.prisma && node server/index.js",
+    "start": "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && node server/index.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
