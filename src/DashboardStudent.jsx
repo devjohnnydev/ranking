@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
@@ -20,6 +20,9 @@ const DashboardStudent = () => {
     const currentLevelBaseXP = Math.pow(level - 1, 2) * 100;
     const progressPercent = Math.max(0, Math.min(((xp - currentLevelBaseXP) / (nextLevelXP - currentLevelBaseXP)) * 100, 100)) || 0;
 
+    const professor = user?.professor;
+    const turma = user?.turma;
+
     return (
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -37,7 +40,7 @@ const DashboardStudent = () => {
                             PlayGame
                         </h2>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 'bold' }}>Aventureiro: {user?.nome}</p>
-                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Mestre Responsável: {myStats.professorNome || 'Carregando...'}</p>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Mestre: {myStats.professorNome || professor?.nome || 'Carregando...'}</p>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -49,6 +52,30 @@ const DashboardStudent = () => {
                     </button>
                 </div>
             </header>
+
+            {professor && (
+                <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '4px solid var(--secondary)', flexShrink: 0 }}>
+                        {professor.foto_url ? <img src={professor.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={60} style={{ margin: '30px', color: 'var(--text-muted)' }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: '300px' }}>
+                        <h3 style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Mestre {professor.nome}</h3>
+                        {professor.mensagem_incentivo && (
+                            <div style={{ fontStyle: 'italic', color: 'var(--primary)', fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <Quote size={20} /> {professor.mensagem_incentivo}
+                            </div>
+                        )}
+                        {professor.bio && <p style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.5' }}>{professor.bio}</p>}
+                    </div>
+                </div>
+            )}
+
+            {turma?.observacao && (
+                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '3rem', background: 'rgba(99, 102, 241, 0.1)', borderLeft: '4px solid var(--primary)' }}>
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}><Info size={18} /> Nota da Turma</h4>
+                    <p style={{ fontSize: '0.95rem' }}>{turma.observacao}</p>
+                </div>
+            )}
 
             <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Hall da Fama</button>

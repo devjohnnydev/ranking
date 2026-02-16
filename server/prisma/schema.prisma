@@ -19,8 +19,13 @@ model Professor {
   nome                String
   email               String    @unique
   senha_hash          String
-  codigo_turma        String    @unique // Código gerado automaticamente
+  codigo_turma        String?   @unique // Código legado ou padrão
   primeiro_acesso     Boolean   @default(true)
+  
+  // Perfil Profissional
+  foto_url            String?   @db.Text
+  bio                 String?   @db.Text
+  mensagem_incentivo  String?   @db.Text
   
   turmas              Turma[]
   alunos              Aluno[]   @relation("ProfessorAlunos")
@@ -32,6 +37,7 @@ model Turma {
   id          Int      @id @default(autoincrement())
   nome        String
   materia     String?
+  observacao  String?   @db.Text
   codigo      String   @unique // O mesmo codigo_turma do Professor
   
   professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)

@@ -16,6 +16,18 @@ const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'senai-secret-key-2024';
 
+// Helper for unique class code
+const generateUniqueCode = async () => {
+    let code;
+    let exists = true;
+    while (exists) {
+        code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const check = await prisma.turma.findUnique({ where: { codigo: code } });
+        if (!check) exists = false;
+    }
+    return code;
+};
+
 app.use(cors({
     origin: true,
     credentials: true
@@ -120,24 +132,25 @@ app.post('/api/admin/professores', authenticate, authorize(['ADMIN']), asyncHand
     const { nome, email, senha } = req.body;
     const defaultPassword = senha || 'senaisaopaulo';
     const hashedPass = await bcrypt.hash(defaultPassword, 10);
-    const codigo = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const codigo = await generateUniqueCode();
 
     const professor = await prisma.professor.create({
         data: {
             nome,
             email,
             senha_hash: hashedPass,
-            codigo_turma: codigo,
+            codigo_turma: codigo, // Mantido apenas para compatibilidade legada se necessário
             primeiro_acesso: true
         }
     });
 
-    // Criar a turma inicial vinculada a este código e professor
+    // Criar a turma inicial
     await prisma.turma.create({
         data: {
-            nome: `Turma de ${nome}`,
+            nome: `Turma Inicial - ${nome}`,
             codigo: codigo,
-            professorId: professor.id
+            professorId: professor.id,
+            materia: 'Boas-vindas'
         }
     });
 
@@ -171,6 +184,31 @@ app.patch('/api/professor/change-password', authenticate, authorize(['PROFESSOR'
         data: { senha_hash: hashedPass, primeiro_acesso: false }
     });
     res.json({ message: "Senha alterada com sucesso" });
+}));
+
+app.patch('/api/professor/perfil', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { foto_url, bio, mensagem_incentivo } = req.body;
+    const updated = await prisma.professor.update({
+        where: { id: req.user.id },
+        data: { foto_url, bio, mensagem_incentivo }
+    });
+    res.json(updated);
+}));
+
+app.post('/api/turmas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { nome, materia, observacao } = req.body;
+    const codigo = await generateUniqueCode();
+
+    const turma = await prisma.turma.create({
+        data: {
+            nome,
+            materia,
+            observacao,
+            codigo,
+            professorId: req.user.id
+        }
+    });
+    res.json(turma);
 }));
 
 app.get('/api/turmas', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
@@ -224,7 +262,7 @@ app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
 
 app.post('/api/atividades', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
     const { titulo, descricao, nota_maxima, turmaId } = req.body;
-    
+
     // Verify ownership
     const turma = await prisma.turma.findFirst({ where: { id: parseInt(turmaId), professorId: req.user.id } });
     if (!turma) return res.status(403).json({ error: "Você não tem permissão para esta turma" });
@@ -256,7 +294,7 @@ app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(asyn
 
 app.get('/api/ranking', asyncHandler(async (req, res) => {
     const { turmaId } = req.query;
-    
+
     const where = {};
     if (turmaId) where.turmaId = parseInt(turmaId);
 

@@ -141,16 +141,26 @@ export const DataProvider = ({ children }) => {
       setUser(result.user);
       setNeedsRefresh(true);
     },
-    createClass: async (name, subject) => {
-      const res = await authFetch(`${API_URL}/atividades`, { // Just an example, maybe not matching actual route names
-        method: 'POST', body: JSON.stringify({ name, subject })
+    createClass: async (name, materia, observacao) => {
+      const res = await authFetch(`${API_URL}/turmas`, {
+        method: 'POST', body: JSON.stringify({ nome: name, materia, observacao })
       });
       const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
       setNeedsRefresh(true);
       return result;
     },
+    updateProfile: async (data) => {
+      const res = await authFetch(`${API_URL}/professor/perfil`, {
+        method: 'PATCH', body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setUser(prev => ({ ...prev, ...result }));
+      return result;
+    },
     addActivity: async (a) => {
-      if (!selectedClass) return;
+      if (!selectedClass) throw new Error("Selecione uma turma");
       const res = await authFetch(`${API_URL}/atividades`, {
         method: 'POST',
         body: JSON.stringify({ ...a, turmaId: selectedClass.id })
