@@ -130,15 +130,15 @@ app.delete('/api/classes/:id', asyncHandler(async (req, res) => {
         prisma.grade.deleteMany({ where: { activity: { classId: parseInt(id) } } }),
         prisma.activity.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.mission.deleteMany({ where: { classId: parseInt(id) } }),
-        prisma.enrollment.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.message.deleteMany({ where: { toClassId: parseInt(id) } }),
+        prisma.enrollment.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.class.delete({ where: { id: parseInt(id) } }),
         // Delete users who are only in this class
         prisma.user.deleteMany({
             where: {
                 id: { in: studentIds },
                 role: 'STUDENT',
-                enrollments: { none: {} } // They should have 0 enrollments after the delete above
+                enrollments: { none: {} }
             }
         })
     ]);
