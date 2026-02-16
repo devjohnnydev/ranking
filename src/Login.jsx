@@ -41,7 +41,6 @@ const Login = () => {
                     <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', color: 'var(--primary)', textShadow: '0 0 10px rgba(255, 232, 31, 0.5)', fontWeight: '900', textTransform: 'uppercase' }}>
                         PlayGame
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
                     <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>{view === 'login' ? 'Entre na sua Guilda' : 'Novo Aluno: Criar Perfil'}</p>
                 </div>
 
@@ -85,15 +84,16 @@ const Login = () => {
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}>
                         {view === 'login' ? 'ENTRAR' : 'CONCLUIR CADASTRO'} {view === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
                     </button>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 'bold', textAlign: 'center', marginTop: '1rem' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
                 </form>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     {view === 'login' ? (
-                        <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'transparent', fontSize: '0.85rem' }} onClick={() => setView('register')}>
+                        <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('register')}>
                             <span style={{ color: '#000000', fontWeight: 'bold' }}>Não tem conta?</span> <span style={{ color: '#000000', marginLeft: '4px', fontWeight: 'bold' }}>Cadastrar como Aluno</span>
                         </button>
                     ) : (
-                        <button className="btn" style={{ width: '100%', justifyContent: 'center', background: 'transparent', fontSize: '0.85rem' }} onClick={() => setView('login')}>
+                        <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('login')}>
                             <ArrowLeft size={16} color="#000000" /> <span style={{ color: '#000000', fontWeight: 'bold' }}>Voltar para Login</span>
                         </button>
                     )}
