@@ -70,7 +70,7 @@ app.get('/api/admin/teachers', asyncHandler(async (req, res) => {
 app.post('/api/admin/teachers', asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
     // Força a senha padrão caso não venha uma
-    const defaultPassword = password || '123456';
+    const defaultPassword = password || 'senaisaopaulo';
     const teacher = await prisma.user.create({
         data: { 
             username: email, 
