@@ -178,6 +178,17 @@ export const DataProvider = ({ children }) => {
       setSelectedClass(null);
       return result;
     },
+    joinClass: async (codigo) => {
+      const res = await authFetch(`${API_URL}/alunos/entrar-turma`, {
+        method: 'POST',
+        body: JSON.stringify({ codigo })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao entrar na turma");
+      setUser(prev => ({ ...prev, ...result }));
+      setNeedsRefresh(true);
+      return result;
+    },
     updateProfile: async (data) => {
       const res = await authFetch(`${API_URL}/professor/perfil`, {
         method: 'PATCH', body: JSON.stringify(data)

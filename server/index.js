@@ -129,7 +129,10 @@ app.post('/api/auth/login', asyncHandler(async (req, res) => {
     }
 
     // 3. Aluno Login
-    const student = await prisma.aluno.findUnique({ where: { email } });
+    const student = await prisma.aluno.findUnique({
+        where: { email },
+        include: { turma: true, professor: true }
+    });
     if (student && student.senha_hash && await bcrypt.compare(password, student.senha_hash)) {
         const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
         return res.json({ token, user: { ...student, role: 'ALUNO' } });
@@ -303,11 +306,6 @@ app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
     const turma = await prisma.turma.findUnique({ where: { codigo: normalizedCode } });
     if (!turma) return res.status(404).json({ error: "Código de turma inválido" });
 
-    const existing = await prisma.aluno.findUnique({ where: { email } });
-    if (existing) return res.status(400).json({ error: "E-mail já cadastrado" });
-
-    const hashedPass = await bcrypt.hash(password, 10);
-
     const aluno = await prisma.aluno.create({
         data: {
             nome,
@@ -315,11 +313,41 @@ app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
             senha_hash: hashedPass,
             professorId: turma.professorId,
             turmaId: turma.id
+        },
+        include: {
+            turma: true,
+            professor: true
         }
     });
 
     const token = jwt.sign({ id: aluno.id, role: 'ALUNO', name: aluno.nome }, JWT_SECRET);
     res.json({ token, user: { ...aluno, role: 'ALUNO' } });
+}));
+
+app.post('/api/alunos/entrar-turma', authenticate, authorize(['ALUNO']), asyncHandler(async (req, res) => {
+    const { codigo } = req.body;
+    const normalizedCode = codigo?.trim().toUpperCase();
+
+    const turma = await prisma.turma.findUnique({
+        where: { codigo: normalizedCode },
+        include: { professor: true }
+    });
+
+    if (!turma) return res.status(404).json({ error: "Código de turma inválido" });
+
+    const updatedAluno = await prisma.aluno.update({
+        where: { id: req.user.id },
+        data: {
+            turmaId: turma.id,
+            professorId: turma.professorId
+        },
+        include: {
+            turma: true,
+            professor: true
+        }
+    });
+
+    res.json(updatedAluno);
 }));
 
 app.patch('/api/aluno/change-password', authenticate, authorize(['ALUNO']), asyncHandler(async (req, res) => {

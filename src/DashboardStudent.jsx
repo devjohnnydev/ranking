@@ -4,7 +4,7 @@ import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages, joinClass
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -19,6 +19,7 @@ const DashboardStudent = () => {
     const [newPassword, setNewPassword] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
+    const [joinCode, setJoinCode] = useState('');
     const fileInputRef = useRef(null);
 
     // Helper to get full image URL
@@ -237,6 +238,23 @@ const DashboardStudent = () => {
                 <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '3rem', background: 'rgba(99, 102, 241, 0.1)', borderLeft: '4px solid var(--primary)' }}>
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}><Info size={18} /> Nota da Turma</h4>
                     <p style={{ fontSize: '0.95rem' }}>{turma.observacao}</p>
+                </div>
+            )}
+
+            {!user?.turmaId && (
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', marginBottom: '3rem', background: 'rgba(255, 232, 31, 0.05)', border: '2px dashed var(--primary)' }}>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)', marginBottom: '1rem' }}>Sua Jornada Começa Aqui</h3>
+                    <p style={{ marginBottom: '2rem', opacity: 0.8 }}>Você ainda não pertence a nenhuma Guilda (Turma). Peça o Código de Acesso ao seu Professor para começar a ganhar XP e subir no Ranking!</p>
+                    <form onSubmit={handleJoinClass} style={{ display: 'flex', gap: '1rem', maxWidth: '400px', margin: '0 auto' }}>
+                        <input
+                            className="input-field"
+                            placeholder="CÓDIGO DA GUILDA"
+                            value={joinCode}
+                            onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                            required
+                        />
+                        <button type="submit" className="btn btn-primary" style={{ padding: '0 2rem' }}>ENTRAR</button>
+                    </form>
                 </div>
             )}
 
