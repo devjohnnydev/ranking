@@ -13,11 +13,34 @@ const Login = () => {
         photoUrl: ''
     });
 
+    const [newPassword, setNewPassword] = useState('');
+    const [mustChange, setMustChange] = useState(false);
+    const [tempUser, setTempUser] = useState(null);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             if (view === 'login') {
-                await login(formData.username, formData.password);
+                if (mustChange) {
+                    const res = await fetch(`/api/profile/${tempUser.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: newPassword, mustChangePassword: false })
+                    });
+                    if (res.ok) {
+                        alert('Senha alterada com sucesso! Agora você pode entrar.');
+                        setMustChange(false);
+                        setFormData({ ...formData, password: newPassword });
+                    } else {
+                        throw new Error('Falha ao atualizar senha');
+                    }
+                    return;
+                }
+                const user = await login(formData.username, formData.password);
+                if (user.mustChangePassword) {
+                    setMustChange(true);
+                    setTempUser(user);
+                }
             } else {
                 await registerStudent(formData);
                 alert('Inscrição enviada para a Guilda! Aguarde a aprovação do seu mestre para começar as missões.');
@@ -45,7 +68,30 @@ const Login = () => {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    {view === 'register' && (
+                    {mustChange ? (
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '1rem', padding: '1rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px' }}>
+                                <p style={{ color: 'var(--warning)', fontWeight: 'bold' }}>Primeiro Acesso Detectado!</p>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Por favor, defina sua nova senha de mestre.</p>
+                            </div>
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Nova Senha</label>
+                                <input 
+                                    className="input-field" 
+                                    type="password" 
+                                    placeholder="Sua nova senha secreta" 
+                                    value={newPassword} 
+                                    onChange={e => setNewPassword(e.target.value)} 
+                                    required 
+                                />
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}>
+                                DEFINIR NOVA SENHA
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {view === 'register' && (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed var(--glass-border)', overflow: 'hidden' }}>
                                 {formData.photoUrl ? <img src={formData.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Camera size={24} style={{ margin: '28px', color: 'var(--text-muted)' }} />}
@@ -69,6 +115,7 @@ const Login = () => {
                                 </div>
                             </>
                         )}
+                    )}
 
                         <div>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Mail size={14} /> Usuário / E-mail</label>

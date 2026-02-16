@@ -112,6 +112,24 @@ const DashboardSuperAdmin = () => {
         return Array.from(names).sort();
     }, [globalData.classes]);
 
+    const handleDeleteTeacher = async (id) => {
+        if (!window.confirm('TEM CERTEZA? Isso excluirá o professor, todas as suas turmas e todos os alunos vinculados que não estiverem em outras turmas!')) return;
+        try {
+            const res = await fetch(`${API_URL}/admin/teachers/${id}?username=${user.username}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                alert('Mestre banido com sucesso!');
+                fetchData();
+            } else {
+                const err = await res.json();
+                alert('Erro: ' + (err.error || 'Falha ao excluir'));
+            }
+        } catch (e) {
+            alert('Erro de conexão ao excluir professor');
+        }
+    };
+
     const studentCount = (globalData.users || []).filter(u => u && u.role === 'STUDENT').length;
     const teacherCount = teachers.length;
     const classCount = (globalData.classes || []).length;
@@ -249,17 +267,32 @@ const DashboardSuperAdmin = () => {
                                 <div>
                                     <h3 style={{ marginBottom: '2rem' }}>Guilda de Mestres Ativos</h3>
                                     <div style={{ display: 'grid', gap: '1rem' }}>
-                                        {teachers.map(t => (
-                                            <div key={t.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>{t.name}</p>
-                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.email}</p>
+                                                <div key={t.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                        <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>{t.name}</p>
+                                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.email}</p>
+                                                        {t.mustChangePassword && <span style={{fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold'}}>Senha Padrão Ativa</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                        <div className="badge" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
+                                                            {(globalData.classes || []).filter(c => c.teacherId === t.id).length} Turmas
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => handleDeleteTeacher(t.id)}
+                                                            className="btn" 
+                                                            style={{ 
+                                                                padding: '0.5rem', 
+                                                                background: 'rgba(239, 68, 68, 0.1)', 
+                                                                color: '#ef4444', 
+                                                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                                borderRadius: '8px'
+                                                            }}
+                                                            title="Excluir Professor"
+                                                        >
+                                                            <ShieldAlert size={18} />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="badge" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
-                                                    {(globalData.classes || []).filter(c => c.teacherId === t.id).length} Turmas
-                                                </div>
-                                            </div>
-                                        ))}
                                     </div>
                                 </div>
                             </div>

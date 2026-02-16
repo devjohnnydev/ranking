@@ -18,6 +18,7 @@ model User {
   bio       String?
   quote     String?
   code      String?  @unique // For students
+  mustChangePassword Boolean @default(false)
 
   // Teacher relations
   classesManaged Class[] @relation("TeacherClasses")

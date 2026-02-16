@@ -69,10 +69,78 @@ app.get('/api/admin/teachers', asyncHandler(async (req, res) => {
 
 app.post('/api/admin/teachers', asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
+    // Força a senha padrão caso não venha uma
+    const defaultPassword = password || '123456';
     const teacher = await prisma.user.create({
-        data: { username: email, email, password, role: 'TEACHER', name }
+        data: { 
+            username: email, 
+            email, 
+            password: defaultPassword, 
+            role: 'TEACHER', 
+            name,
+            mustChangePassword: true // Novo campo para forçar troca
+        }
     });
+    // Aqui deveria ser enviado o email, mas como não temos serviço de email configurado,
+    // apenas retornamos a informação. No mundo real usaríamos nodemailer ou similar.
     res.json(teacher);
+}));
+
+app.delete('/api/admin/teachers/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { username } = req.query;
+
+    if (!isJohnny(username)) {
+        return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const teacherId = parseInt(id);
+    
+    // Buscar todas as turmas do professor
+    const teacherClasses = await prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true }
+    });
+    const classIds = teacherClasses.map(c => c.id);
+
+    // Buscar todos os alunos vinculados a essas turmas
+    const enrollments = await prisma.enrollment.findMany({
+        where: { classId: { in: classIds } },
+        select: { studentId: true }
+    });
+    const studentIds = [...new Set(enrollments.map(e => e.studentId))];
+
+    await prisma.$transaction([
+        // Remover notas, atividades, missões e mensagens das turmas do professor
+        prisma.grade.deleteMany({ where: { activity: { classId: { in: classIds } } } }),
+        prisma.activity.deleteMany({ where: { classId: { in: classIds } } }),
+        prisma.mission.deleteMany({ where: { classId: { in: classIds } } }),
+        prisma.message.deleteMany({
+            where: {
+                OR: [
+                    { toClassId: { in: classIds } },
+                    { fromId: teacherId },
+                    { toUserId: teacherId }
+                ]
+            }
+        }),
+        // Remover matrículas
+        prisma.enrollment.deleteMany({ where: { classId: { in: classIds } } }),
+        // Remover as turmas
+        prisma.class.deleteMany({ where: { teacherId } }),
+        // Remover os alunos que ficaram sem nenhuma matrícula
+        prisma.user.deleteMany({
+            where: {
+                id: { in: studentIds },
+                role: 'STUDENT',
+                enrollments: { none: {} }
+            }
+        }),
+        // Finalmente remover o professor
+        prisma.user.delete({ where: { id: teacherId } })
+    ]);
+
+    res.json({ message: "Professor e todos os dados vinculados excluídos com sucesso" });
 }));
 
 // Global View for Johnny
@@ -501,10 +569,18 @@ app.delete('/api/enrollments/remove', asyncHandler(async (req, res) => {
 
 // Profile update
 app.patch('/api/profile/:id', asyncHandler(async (req, res) => {
-    const { photoUrl, name, password, bio, quote } = req.body;
+    const { photoUrl, name, password, bio, quote, mustChangePassword } = req.body;
+    const updateData = {};
+    if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
+    if (name !== undefined) updateData.name = name;
+    if (password !== undefined) updateData.password = password;
+    if (bio !== undefined) updateData.bio = bio;
+    if (quote !== undefined) updateData.quote = quote;
+    if (mustChangePassword !== undefined) updateData.mustChangePassword = mustChangePassword;
+
     const user = await prisma.user.update({
         where: { id: parseInt(req.params.id) },
-        data: { photoUrl, name, password, bio, quote }
+        data: updateData
     });
     const { password: _, ...userNoPass } = user;
     res.json(userNoPass);
