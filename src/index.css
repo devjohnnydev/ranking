@@ -139,9 +139,9 @@ body {
 }
 
 .nav-btn {
-  background: #FFFFFF !important;
+  background: transparent !important;
   color: #000000 !important;
-  opacity: 0.8;
+  box-shadow: none !important;
 }
 
 .nav-btn.active {
