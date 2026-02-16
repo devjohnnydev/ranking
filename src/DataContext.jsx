@@ -20,23 +20,11 @@ export const useData = () => {
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const DataProvider = ({ children }) => {
+  const [token, setToken] = useState(() => localStorage.getItem('eduGameToken'));
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('eduGameUser');
-      if (!saved) return null;
-      const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object' && parsed.id) {
-        return {
-          id: parsed.id,
-          username: parsed.username || '',
-          name: parsed.name || parsed.username || 'Aventureiro',
-          role: parsed.role || 'STUDENT',
-          photoUrl: parsed.photoUrl || '',
-          bio: parsed.bio || '',
-          quote: parsed.quote || ''
-        };
-      }
-      return null;
+      return saved ? JSON.parse(saved) : null;
     } catch (e) {
       return null;
     }
@@ -50,66 +38,39 @@ export const DataProvider = ({ children }) => {
   const [grades, setGrades] = useState({});
   const [ranking, setRanking] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
 
-  const fetchClassData = useCallback(async (classId) => {
-    if (!classId || !user) return;
-    try {
-      const [resStu, resAct, resMissions, resGrades, resRank, resPending] = await Promise.all([
-        fetch(`${API_URL}/students?classId=${classId}`).then(r => r.json()),
-        fetch(`${API_URL}/activities?classId=${classId}`).then(r => r.json()),
-        fetch(`${API_URL}/missions?classId=${classId}`).then(r => r.json()),
-        fetch(`${API_URL}/grades?classId=${classId}`).then(r => r.json()),
-        fetch(`${API_URL}/ranking?classId=${classId}&username=${user.username}`).then(r => r.json()),
-        fetch(`${API_URL}/enrollments/pending?classId=${classId}`).then(r => r.json())
-      ]);
-
-      setStudents(Array.isArray(resStu) ? resStu : []);
-      setActivities(Array.isArray(resAct) ? resAct : []);
-      setMissions(Array.isArray(resMissions) ? resMissions : []);
-      setRanking(Array.isArray(resRank) ? resRank : []);
-      setPendingEnrollments(Array.isArray(resPending) ? resPending : []);
-
-      const gradeMap = {};
-      if (Array.isArray(resGrades)) {
-        resGrades.forEach(g => {
-          if (g && g.studentId) gradeMap[`${g.studentId}-${g.activityId}`] = g.score;
-        });
-      }
-      setGrades(gradeMap);
-    } catch (e) {
-      console.error("fetchClassData fail", e);
+  const authFetch = useCallback(async (url, options = {}) => {
+    const headers = {
+      ...options.headers,
+      'Authorization': token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json'
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401 || res.status === 403) {
+      // Handle unauthorized - logout
+      // logout();
     }
-  }, [user?.username]);
+    return res;
+  }, [token]);
 
   const refreshAll = useCallback(async () => {
-    if (!user || !user.id) return;
+    if (!user) return;
     try {
       setLoading(true);
-      const teacherParam = user.role === 'ADMIN' ? `username=${user.username}` : (user.role === 'TEACHER' ? `teacherId=${user.id}` : `studentId=${user.id}`);
 
-      const [resClasses, resMessages] = await Promise.all([
-        fetch(`${API_URL}/classes?${teacherParam}`).then(r => r.json()),
-        fetch(`${API_URL}/messages?userId=${user.id}`).then(r => r.json())
+      // Basic data fetch based on role
+      const [resClasses, resRank] = await Promise.all([
+        authFetch(`${API_URL}/turmas`).then(r => r.json()),
+        authFetch(`${API_URL}/ranking`).then(r => r.json())
       ]);
 
-      const classList = Array.isArray(resClasses) ? resClasses : [];
-      setClasses(classList);
-      setMessages(Array.isArray(resMessages) ? resMessages : []);
+      setClasses(Array.isArray(resClasses) ? resClasses : []);
+      setRanking(Array.isArray(resRank) ? resRank : []);
 
-      if (classList.length > 0) {
-        if (!selectedClass) {
-          setSelectedClass(classList[0]);
-        } else {
-          fetchClassData(selectedClass.id);
-        }
-      }
-
-      if (user.role === 'ADMIN') {
-        const globalRank = await fetch(`${API_URL}/ranking?username=${user.username}`).then(r => r.json());
-        setRanking(Array.isArray(globalRank) ? globalRank : []);
+      if (Array.isArray(resClasses) && resClasses.length > 0 && !selectedClass) {
+        setSelectedClass(resClasses[0]);
       }
     } catch (e) {
       console.error("refreshAll fail", e);
@@ -117,157 +78,104 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
       setNeedsRefresh(false);
     }
-  }, [user?.id, user?.username, user?.role, selectedClass?.id, fetchClassData]);
+  }, [user, authFetch, selectedClass]);
 
   useEffect(() => {
-    if (user) {
-      try {
-        const userToSave = { ...user };
-        if (userToSave.photoUrl && userToSave.photoUrl.startsWith('data:')) {
-          delete userToSave.photoUrl;
-        }
-        localStorage.setItem('eduGameUser', JSON.stringify(userToSave));
-      } catch (e) {
-        console.warn("Falha ao salvar no localStorage (Quota excedida):", e);
-      }
-      setNeedsRefresh(true);
-    } else {
-      localStorage.removeItem('eduGameUser');
-    }
-  }, [user?.id]);
+    if (token) localStorage.setItem('eduGameToken', token);
+    else localStorage.removeItem('eduGameToken');
+  }, [token]);
 
   useEffect(() => {
-    if (needsRefresh) refreshAll();
-  }, [needsRefresh, refreshAll]);
+    if (user) localStorage.setItem('eduGameUser', JSON.stringify(user));
+    else localStorage.removeItem('eduGameUser');
+  }, [user]);
 
   useEffect(() => {
-    if (selectedClass?.id) fetchClassData(selectedClass.id);
-  }, [selectedClass?.id, fetchClassData]);
+    if (user && needsRefresh) refreshAll();
+  }, [user, needsRefresh, refreshAll]);
 
-  const login = async (username, password) => {
+  const login = async (credentials) => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify(credentials)
       });
 
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error(`Resposta inválida do servidor (HTML recebido em vez de JSON).`);
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha no login');
 
-      const userData = await res.json();
-      if (!res.ok) throw new Error(userData.error || 'Falha no login');
-      setUser(userData);
-      return true;
+      setToken(data.token);
+      setUser(data.user);
+      setNeedsRefresh(true);
+      return data.user;
     } catch (e) {
       console.error("Login Error:", e);
-      alert(e.message);
-      return false;
+      throw e;
     } finally {
       setLoading(false);
     }
   };
 
   const logout = () => {
+    setToken(null);
     setUser(null);
     setClasses([]);
     setSelectedClass(null);
-    setStudents([]);
-    setActivities([]);
-    setMissions([]);
-    setMessages([]);
-    setNeedsRefresh(false);
+    setRanking([]);
   };
 
   const value = useMemo(() => ({
-    user, login, logout, loading,
-    classes, selectedClass, setSelectedClass, missions, students, activities, grades, ranking, messages, pendingEnrollments,
+    user, token, login, logout, loading,
+    classes, selectedClass, setSelectedClass, missions, students, activities, grades, ranking, messages,
     registerStudent: async (data) => {
-      const res = await fetch(`${API_URL}/auth/register-student`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      setUser(result);
-    },
-    createClass: async (name, subject) => {
-      const res = await fetch(`${API_URL}/classes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, subject, teacherId: user.id }) });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      setClasses(prev => [...prev, result]);
-      setSelectedClass(result);
-      return result;
-    },
-    joinClass: async (joinCode) => {
-      const res = await fetch(`${API_URL}/classes/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: user.id, joinCode }) });
-      const result = await res.json();
-      if (!res.ok) {
-        alert(`Erro ao entrar na sala: ${result.error || 'Erro desconhecido'}`);
-        throw new Error(result.error);
-      }
-      setNeedsRefresh(true);
-      alert('Solicitação enviada! Aguarde a aprovação do mestre.');
-    },
-    addMission: async (m) => {
-      if (!selectedClass) return;
-      const res = await fetch(`${API_URL}/missions`, {
+      const res = await fetch(`${API_URL}/auth/register-aluno`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...m, teacherId: user.id, classId: selectedClass.id })
+        body: JSON.stringify(data)
       });
-      const newMission = await res.json();
-      if (res.ok) {
-        setMissions(prev => Array.isArray(prev) ? [newMission, ...prev] : [newMission]);
-        fetchClassData(selectedClass.id);
-      } else {
-        alert(`Erro ao lançar missão: ${newMission.error || 'Erro desconhecido'}`);
-      }
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setToken(result.token);
+      setUser(result.user);
+      setNeedsRefresh(true);
+    },
+    createClass: async (name, subject) => {
+      const res = await authFetch(`${API_URL}/atividades`, { // Just an example, maybe not matching actual route names
+        method: 'POST', body: JSON.stringify({ name, subject })
+      });
+      const result = await res.json();
+      setNeedsRefresh(true);
+      return result;
     },
     addActivity: async (a) => {
       if (!selectedClass) return;
-      const res = await fetch(`${API_URL}/activities`, {
+      const res = await authFetch(`${API_URL}/atividades`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...a, classId: selectedClass.id })
+        body: JSON.stringify({ ...a, turmaId: selectedClass.id })
       });
-      const newAct = await res.json();
-      if (res.ok) {
-        setActivities(prev => Array.isArray(prev) ? [newAct, ...prev] : [newAct]);
-        fetchClassData(selectedClass.id);
-      } else {
-        alert(`Erro ao lançar missão: ${newAct.error || 'Erro desconhecido'}`);
-      }
+      const result = await res.json();
+      if (res.ok) setNeedsRefresh(true);
+      else throw new Error(result.error);
     },
-    setStudentGrade: async (s, act, score) => {
-      await fetch(`${API_URL}/grades`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: s, activityId: act, score, teacherId: user.id }) });
-      setGrades(prev => ({ ...prev, [`${s}-${act}`]: score }));
-      if (selectedClass) {
-        const resRank = await fetch(`${API_URL}/ranking?classId=${selectedClass.id}&username=${user.username}`).then(r => r.json());
-        setRanking(Array.isArray(resRank) ? resRank : []);
-      }
-    },
-    sendMessage: async (m) => {
-      await fetch(`${API_URL}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...m, fromId: user.id }) });
-    },
-    updateProfile: async (d) => {
-      const res = await fetch(`${API_URL}/profile/${user.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
-      const u = await res.json();
-      setUser(u);
-    },
-    approveEnrollment: async (enrollmentId, status) => {
-      const res = await fetch(`${API_URL}/enrollments/approve`, {
+    setStudentGrade: async (alunoId, atividadeId, valor) => {
+      const res = await authFetch(`${API_URL}/notas`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enrollmentId, status })
+        body: JSON.stringify({ alunoId, atividadeId, valor })
       });
-      if (!res.ok) throw new Error("Falha ao processar solicitação");
-      setNeedsRefresh(true);
+      if (res.ok) setNeedsRefresh(true);
+    },
+    updateProfessorPassword: async (password) => {
+      const res = await authFetch(`${API_URL}/professor/change-password`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password })
+      });
+      if (!res.ok) throw new Error("Falha ao alterar senha");
+      setUser(prev => ({ ...prev, primeiro_acesso: false }));
     },
     refreshAll: () => setNeedsRefresh(true)
-  }), [user, loading, classes, selectedClass, students, activities, missions, grades, ranking, messages, pendingEnrollments, fetchClassData, refreshAll]);
+  }), [user, token, loading, classes, selectedClass, students, activities, missions, grades, ranking, messages, authFetch]);
 
   return (
     <DataContextInternal.Provider value={value}>

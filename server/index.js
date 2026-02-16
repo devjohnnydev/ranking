@@ -5,6 +5,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,6 +14,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'senai-secret-key-2024';
 
 app.use(cors({
     origin: true,
@@ -22,26 +25,44 @@ app.use(express.json({ limit: '50mb' }));
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// Helper to wrap async routes
+// --- MIDDLEWARES ---
+
+const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Token não fornecido' });
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(403).json({ error: 'Token inválido ou expirado' });
+    }
+};
+
+const authorize = (roles) => (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+        return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
+    }
+    next();
+};
+
 const asyncHandler = fn => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// Utility for Johnnny's global access
-const isJohnny = (username) => username === 'johnny.oliveira@sp.senai.br';
+// --- INITIALIZATION ---
 
-// Initialize Admin
 async function initAdmin() {
     const adminEmail = 'johnny.oliveira@sp.senai.br';
-    const existing = await prisma.user.findUnique({ where: { username: adminEmail } });
+    const existing = await prisma.administrador.findUnique({ where: { email: adminEmail } });
     if (!existing) {
-        await prisma.user.create({
+        const hashedPass = await bcrypt.hash('46431194', 10);
+        await prisma.administrador.create({
             data: {
-                username: adminEmail,
+                nome: 'Johnny Oliveira',
                 email: adminEmail,
-                password: '46431194',
-                role: 'ADMIN',
-                name: 'Johnny Oliveira'
+                senha_hash: hashedPass
             }
         });
         console.log('Super Admin created!');
@@ -49,557 +70,229 @@ async function initAdmin() {
 }
 initAdmin().catch(console.error);
 
-// Auth Login
+// --- AUTH ROUTES ---
+
 app.post('/api/auth/login', asyncHandler(async (req, res) => {
-    const { username, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { username } });
-    if (user && user.password === password) {
-        const { password: _, ...userNoPass } = user;
-        res.json(userNoPass);
-    } else {
-        res.status(401).json({ error: 'Credenciais inválidas' });
+    const { email, password, nome, codigo } = req.body;
+
+    // 1. Aluno Login (Nome + Código)
+    if (nome && codigo) {
+        const student = await prisma.aluno.findFirst({
+            where: {
+                nome,
+                turma: { codigo: codigo.trim().toUpperCase() }
+            },
+            include: { professor: true, turma: true }
+        });
+
+        if (student) {
+            const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
+            return res.json({ token, user: { ...student, role: 'ALUNO' } });
+        }
+        return res.status(401).json({ error: 'Dados do aluno ou código da turma inválidos' });
     }
+
+    // 2. Admin Login
+    const admin = await prisma.administrador.findUnique({ where: { email } });
+    if (admin && await bcrypt.compare(password, admin.senha_hash)) {
+        const token = jwt.sign({ id: admin.id, role: 'ADMIN', name: admin.nome }, JWT_SECRET);
+        return res.json({ token, user: { ...admin, role: 'ADMIN' } });
+    }
+
+    // 3. Professor Login
+    const professor = await prisma.professor.findUnique({ where: { email } });
+    if (professor && await bcrypt.compare(password, professor.senha_hash)) {
+        const token = jwt.sign({ id: professor.id, role: 'PROFESSOR', name: professor.nome }, JWT_SECRET);
+        return res.json({ token, user: { ...professor, role: 'PROFESSOR' } });
+    }
+
+    res.status(401).json({ error: 'Credenciais inválidas' });
 }));
 
-// Admin: Manage Teachers (Only Johnny)
-app.get('/api/admin/teachers', asyncHandler(async (req, res) => {
-    const teachers = await prisma.user.findMany({ where: { role: 'TEACHER' } });
-    res.json(teachers);
+// --- ADMIN ROUTES ---
+
+app.get('/api/admin/professores', authenticate, authorize(['ADMIN']), asyncHandler(async (req, res) => {
+    const professores = await prisma.professor.findMany();
+    res.json(professores);
 }));
 
-app.post('/api/admin/teachers', asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body;
-    // Força a senha padrão caso não venha uma
-    const defaultPassword = password || 'senaisaopaulo';
-    const teacher = await prisma.user.create({
-        data: { 
-            username: email, 
-            email, 
-            password: defaultPassword, 
-            role: 'TEACHER', 
-            name,
-            mustChangePassword: true // Novo campo para forçar troca
+app.post('/api/admin/professores', authenticate, authorize(['ADMIN']), asyncHandler(async (req, res) => {
+    const { nome, email, senha } = req.body;
+    const defaultPassword = senha || 'senaisaopaulo';
+    const hashedPass = await bcrypt.hash(defaultPassword, 10);
+    const codigo = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    const professor = await prisma.professor.create({
+        data: {
+            nome,
+            email,
+            senha_hash: hashedPass,
+            codigo_turma: codigo,
+            primeiro_acesso: true
         }
     });
-    // Aqui deveria ser enviado o email, mas como não temos serviço de email configurado,
-    // apenas retornamos a informação. No mundo real usaríamos nodemailer ou similar.
-    res.json(teacher);
+
+    // Criar a turma inicial vinculada a este código e professor
+    await prisma.turma.create({
+        data: {
+            nome: `Turma de ${nome}`,
+            codigo: codigo,
+            professorId: professor.id
+        }
+    });
+
+    res.json(professor);
 }));
 
-app.delete('/api/admin/teachers/:id', asyncHandler(async (req, res) => {
+app.post('/api/admin/professores/:id/reset-senha', authenticate, authorize(['ADMIN']), asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { username } = req.query;
-
-    if (!isJohnny(username)) {
-        return res.status(403).json({ error: "Acesso negado" });
-    }
-
-    const teacherId = parseInt(id);
-    
-    // Buscar todas as turmas do professor
-    const teacherClasses = await prisma.class.findMany({
-        where: { teacherId },
-        select: { id: true }
+    const hashedPass = await bcrypt.hash('senaisaopaulo', 10);
+    await prisma.professor.update({
+        where: { id: parseInt(id) },
+        data: { senha_hash: hashedPass, primeiro_acesso: true }
     });
-    const classIds = teacherClasses.map(c => c.id);
+    res.json({ message: "Senha resetada para padrão (senaisaopaulo) com sucesso" });
+}));
 
-    // Buscar todos os alunos vinculados a essas turmas
-    const enrollments = await prisma.enrollment.findMany({
-        where: { classId: { in: classIds } },
-        select: { studentId: true }
-    });
-    const studentIds = [...new Set(enrollments.map(e => e.studentId))];
-
-    await prisma.$transaction([
-        // Remover notas, atividades, missões e mensagens das turmas do professor
-        prisma.grade.deleteMany({ where: { activity: { classId: { in: classIds } } } }),
-        prisma.activity.deleteMany({ where: { classId: { in: classIds } } }),
-        prisma.mission.deleteMany({ where: { classId: { in: classIds } } }),
-        prisma.message.deleteMany({
-            where: {
-                OR: [
-                    { toClassId: { in: classIds } },
-                    { fromId: teacherId },
-                    { toUserId: teacherId }
-                ]
-            }
-        }),
-        // Remover matrículas
-        prisma.enrollment.deleteMany({ where: { classId: { in: classIds } } }),
-        // Remover as turmas
-        prisma.class.deleteMany({ where: { teacherId } }),
-        // Remover os alunos que ficaram sem nenhuma matrícula
-        prisma.user.deleteMany({
-            where: {
-                id: { in: studentIds },
-                role: 'STUDENT',
-                enrollments: { none: {} }
-            }
-        }),
-        // Finalmente remover o professor
-        prisma.user.delete({ where: { id: teacherId } })
-    ]);
-
+app.delete('/api/admin/professores/:id', authenticate, authorize(['ADMIN']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    // O Cascade Delete no Prisma cuidará das Turmas, Alunos, Atividades, etc.
+    await prisma.professor.delete({ where: { id: parseInt(id) } });
     res.json({ message: "Professor e todos os dados vinculados excluídos com sucesso" });
 }));
 
-// Global View for Johnny
-app.get('/api/admin/global-data', asyncHandler(async (req, res) => {
-    const { username } = req.query;
-    if (!isJohnny(username)) return res.status(403).json({ error: "Acesso negado" });
+// --- PROFESSOR ROUTES ---
 
-    const [users, classes, activities, grades] = await Promise.all([
-        prisma.user.findMany({ 
-            include: { 
-                enrollments: {
-                    include: {
-                        class: {
-                            include: {
-                                teacher: true
-                            }
-                        }
-                    }
-                } 
-            } 
-        }),
-        prisma.class.findMany({ include: { teacher: true } }),
-        prisma.activity.findMany({ include: { class: true } }),
-        prisma.grade.findMany()
-    ]);
-    res.json({ users, classes, activities, grades });
-}));
-
-// Classes management
-app.delete('/api/classes/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { teacherId, username } = req.query;
-
-    const targetClass = await prisma.class.findUnique({
-        where: { id: parseInt(id) }
+app.patch('/api/professor/change-password', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { password } = req.body;
+    const hashedPass = await bcrypt.hash(password, 10);
+    await prisma.professor.update({
+        where: { id: req.user.id },
+        data: { senha_hash: hashedPass, primeiro_acesso: false }
     });
+    res.json({ message: "Senha alterada com sucesso" });
+}));
 
-    if (!targetClass) {
-        return res.status(404).json({ error: "Turma não encontrada" });
+app.get('/api/turmas', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
+    if (req.user.role === 'ADMIN') {
+        return res.json(await prisma.turma.findMany({ include: { professor: true } }));
     }
-
-    // Authorization check: Only Johnny (Admin) or the class teacher can delete
-    if (!isJohnny(username) && targetClass.teacherId !== parseInt(teacherId)) {
-        return res.status(403).json({ error: "Acesso negado para excluir esta turma" });
-    }
-
-    // Delete everything associated with the class
-    const enrollments = await prisma.enrollment.findMany({
-        where: { classId: parseInt(id) },
-        select: { studentId: true }
+    const turmas = await prisma.turma.findMany({
+        where: { professorId: req.user.id }
     });
-    const studentIds = enrollments.map(e => e.studentId);
-
-    await prisma.$transaction([
-        prisma.grade.deleteMany({ where: { activity: { classId: parseInt(id) } } }),
-        prisma.activity.deleteMany({ where: { classId: parseInt(id) } }),
-        prisma.mission.deleteMany({ where: { classId: parseInt(id) } }),
-        prisma.message.deleteMany({ where: { toClassId: parseInt(id) } }),
-        prisma.enrollment.deleteMany({ where: { classId: parseInt(id) } }),
-        prisma.class.delete({ where: { id: parseInt(id) } }),
-        // Delete users who are only in this class
-        prisma.user.deleteMany({
-            where: {
-                id: { in: studentIds },
-                role: 'STUDENT',
-                enrollments: { none: {} }
-            }
-        })
-    ]);
-
-    res.json({ message: "Turma excluída com sucesso" });
+    res.json(turmas);
 }));
 
-app.get('/api/classes', asyncHandler(async (req, res) => {
-    const { teacherId, studentId, username } = req.query;
-
-    if (isJohnny(username)) {
-        return res.json(await prisma.class.findMany({ include: { teacher: true } }));
-    }
-
-    if (teacherId && teacherId !== 'undefined') {
-        return res.json(await prisma.class.findMany({ where: { teacherId: parseInt(teacherId) } }));
-    }
-
-    if (studentId && studentId !== 'undefined') {
-        const enrollments = await prisma.enrollment.findMany({
-            where: { studentId: parseInt(studentId) },
-            include: { class: { include: { teacher: { select: { name: true, photoUrl: true, quote: true, bio: true } } } } }
-        });
-        return res.json(enrollments.map(e => ({
-            ...e.class,
-            enrollmentStatus: e.status
-        })));
-    }
-    res.json([]);
-}));
-
-app.post('/api/classes', asyncHandler(async (req, res) => {
-    const { name, subject, teacherId } = req.body;
-    if (!teacherId || teacherId === 'undefined') return res.status(400).json({ error: "ID do professor inválido" });
-
-    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const newClass = await prisma.class.create({
-        data: { name, subject, teacherId: parseInt(teacherId), joinCode }
-    });
-    res.json(newClass);
-}));
-
-app.post('/api/classes/join', asyncHandler(async (req, res) => {
-    const { studentId, joinCode } = req.body;
-    const normalizedCode = joinCode?.trim().toUpperCase();
-    console.log(`Attempting join for student ${studentId} with code: ${normalizedCode}`);
-
-    const targetClass = await prisma.class.findUnique({ where: { joinCode: normalizedCode } });
-    if (!targetClass) {
-        console.warn(`Join failed: Class not found for code ${normalizedCode}`);
-        return res.status(404).json({ error: "Código de turma inválido" });
-    }
-
-    const enrollment = await prisma.enrollment.upsert({
-        where: { studentId_classId: { studentId: parseInt(studentId), classId: targetClass.id } },
-        update: {},
-        create: {
-            studentId: parseInt(studentId),
-            classId: targetClass.id,
-            status: 'PENDING'
-        }
-    });
-    res.json(enrollment);
-}));
-
-// Student lookup
-app.get('/api/students', asyncHandler(async (req, res) => {
-    const { classId, status } = req.query;
-    if (!classId || classId === 'undefined') return res.json([]);
-
-    const where = { classId: parseInt(classId) };
-    if (status) {
-        where.status = status;
-    }
-
-    const enrollments = await prisma.enrollment.findMany({
-        where,
-        include: { student: true }
-    });
-    res.json(enrollments.map(e => ({
-        ...e.student,
-        enrollmentStatus: e.status,
-        enrollmentId: e.id
-    })));
-}));
-
-// Student self-registration with code
-app.post('/api/auth/register-student', asyncHandler(async (req, res) => {
-    const { username, password, name, joinCode, photoUrl } = req.body;
-    const normalizedCode = joinCode?.trim().toUpperCase();
-    console.log(`[Register] Attempting: ${username} with code: ${normalizedCode}`);
-
-    if (!normalizedCode) return res.status(400).json({ error: "Código da turma é obrigatório" });
-
-    const targetClass = await prisma.class.findUnique({ where: { joinCode: normalizedCode } });
-    if (!targetClass) {
-        console.warn(`[Register] Failed: Class not found for code ${normalizedCode}`);
-        return res.status(404).json({ error: "Código de turma inválido ou não encontrado" });
-    }
-
-    const existingUser = await prisma.user.findUnique({ where: { username } });
-    if (existingUser) {
-        return res.status(400).json({ error: "Este e-mail/usuário já está cadastrado" });
-    }
-
-    // Use transaction to ensure both user and enrollment are created
-    const result = await prisma.$transaction(async (tx) => {
-        const student = await tx.user.create({
-            data: { username, password, name, role: 'STUDENT', photoUrl }
-        });
-
-        const enrollment = await tx.enrollment.create({
-            data: {
-                studentId: student.id,
-                classId: targetClass.id,
-                status: 'APPROVED'
-            }
-        });
-
-        console.log(`[Register] Success: Student ${student.id} linked to class ${targetClass.id}`);
-        return student;
-    });
-
-    const { password: _, ...userNoPass } = result;
-    res.json(userNoPass);
-}));
-
-// Messaging
-app.post('/api/messages', asyncHandler(async (req, res) => {
-    const { fromId, toUserId, toClassId, content } = req.body;
-    const msg = await prisma.message.create({
-        data: {
-            fromId: parseInt(fromId),
-            toUserId: (toUserId && toUserId !== 'undefined') ? parseInt(toUserId) : null,
-            toClassId: (toClassId && toClassId !== 'undefined') ? parseInt(toClassId) : null,
-            content
-        }
-    });
-    res.json(msg);
-}));
-
-app.get('/api/messages', asyncHandler(async (req, res) => {
-    const { userId } = req.query;
-    if (!userId || userId === 'undefined') return res.json([]);
-
-    const studentEnrollments = await prisma.enrollment.findMany({ where: { studentId: parseInt(userId) } });
-    const classIds = studentEnrollments.map(e => e.classId);
-
-    const messages = await prisma.message.findMany({
-        where: {
-            OR: [
-                { toUserId: parseInt(userId) },
-                { toClassId: { in: classIds } }
-            ]
-        },
-        include: { from: true, toClass: true },
-        orderBy: { createdAt: 'desc' }
-    });
-    res.json(messages);
-}));
-
-// Activities, Missions & Grades
-app.get('/api/missions', asyncHandler(async (req, res) => {
-    const { classId, teacherId } = req.query;
+app.get('/api/alunos', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
+    const { turmaId } = req.query;
     const where = {};
-    if (classId && classId !== 'undefined') {
-        where.classId = parseInt(classId);
-    } else if (teacherId && teacherId !== 'undefined') {
-        where.teacherId = parseInt(teacherId);
+    if (req.user.role === 'PROFESSOR') {
+        where.professorId = req.user.id;
     }
-    
-    const missions = await prisma.mission.findMany({
+    if (turmaId) {
+        where.turmaId = parseInt(turmaId);
+    }
+
+    const alunos = await prisma.aluno.findMany({
         where,
-        include: { teacher: true, class: true },
-        orderBy: { createdAt: 'desc' }
+        include: { turma: true }
     });
-    res.json(missions);
+    res.json(alunos);
 }));
 
-app.post('/api/missions', asyncHandler(async (req, res) => {
-    const { title, description, reward, deadline, classId, teacherId } = req.body;
-    if (!classId || classId === 'undefined') return res.status(400).json({ error: "ID da turma inválido" });
-    if (!teacherId || teacherId === 'undefined') return res.status(400).json({ error: "ID do professor inválido" });
+// Aluno self-registration
+app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
+    const { nome, codigo } = req.body;
+    const normalizedCode = codigo?.trim().toUpperCase();
 
-    const mission = await prisma.mission.create({
+    const turma = await prisma.turma.findUnique({ where: { codigo: normalizedCode } });
+    if (!turma) return res.status(404).json({ error: "Código de turma inválido" });
+
+    const aluno = await prisma.aluno.create({
         data: {
-            title,
-            description,
-            reward: parseInt(reward) || 0,
-            deadline: deadline ? new Date(deadline) : null,
-            classId: parseInt(classId),
-            teacherId: parseInt(teacherId)
-        }
-    });
-    res.json(mission);
-}));
-
-app.get('/api/activities', asyncHandler(async (req, res) => {
-    const { classId } = req.query;
-    if (!classId || classId === 'undefined') return res.json([]);
-    const activities = await prisma.activity.findMany({
-        where: { classId: parseInt(classId) },
-        orderBy: { createdAt: 'desc' }
-    });
-    res.json(activities);
-}));
-
-app.get('/api/grades', asyncHandler(async (req, res) => {
-    const { classId } = req.query;
-    if (!classId || classId === 'undefined') return res.json([]);
-
-    // Fetch all activities for this class to get their IDs
-    const activities = await prisma.activity.findMany({
-        where: { classId: parseInt(classId) },
-        select: { id: true }
-    });
-    const activityIds = activities.map(a => a.id);
-
-    const grades = await prisma.grade.findMany({
-        where: { activityId: { in: activityIds } }
-    });
-    res.json(grades);
-}));
-
-app.post('/api/activities', asyncHandler(async (req, res) => {
-    const { title, description, desc, maxScore, classId } = req.body;
-    console.log(`Mission creation attempt for class ${classId}: ${title}`);
-    if (!classId || classId === 'undefined') return res.status(400).json({ error: "ID da turma inválido" });
-
-    try {
-        const activity = await prisma.activity.create({
-            data: {
-                title,
-                description: description || desc || "",
-                maxScore: parseFloat(maxScore) || 10,
-                classId: parseInt(classId)
-            }
-        });
-        console.log(`Mission created successfully: ${activity.id}`);
-        res.json(activity);
-    } catch (err) {
-        console.error("Error creating mission:", err);
-        res.status(500).json({ error: "Falha ao criar missão no banco de dados" });
-    }
-}));
-
-app.post('/api/grades', asyncHandler(async (req, res) => {
-    const { studentId, activityId, score, teacherId } = req.body;
-    const grade = await prisma.grade.upsert({
-        where: { studentId_activityId: { studentId: parseInt(studentId), activityId: parseInt(activityId) } },
-        update: { score: parseFloat(score) },
-        create: { studentId: parseInt(studentId), activityId: parseInt(activityId), score: parseFloat(score) }
-    });
-
-    const activity = await prisma.activity.findUnique({ where: { id: parseInt(activityId) } });
-    await prisma.message.create({
-        data: {
-            fromId: parseInt(teacherId),
-            toUserId: parseInt(studentId),
-            content: `Sua nota na atividade "${activity.title}" foi postada: ${score}!`
+            nome,
+            professorId: turma.professorId,
+            turmaId: turma.id
         }
     });
 
+    const token = jwt.sign({ id: aluno.id, role: 'ALUNO', name: aluno.nome }, JWT_SECRET);
+    res.json({ token, user: { ...aluno, role: 'ALUNO' } });
+}));
+
+// --- GAME LOGIC (Missions, Activities, Grades) ---
+
+app.post('/api/atividades', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { titulo, descricao, nota_maxima, turmaId } = req.body;
+    
+    // Verify ownership
+    const turma = await prisma.turma.findFirst({ where: { id: parseInt(turmaId), professorId: req.user.id } });
+    if (!turma) return res.status(403).json({ error: "Você não tem permissão para esta turma" });
+
+    const atividade = await prisma.atividade.create({
+        data: {
+            titulo,
+            descricao,
+            nota_maxima: parseFloat(nota_maxima) || 10,
+            turmaId: parseInt(turmaId)
+        }
+    });
+    res.json(atividade);
+}));
+
+app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { alunoId, atividadeId, valor } = req.body;
+    const grade = await prisma.nota.upsert({
+        where: { alunoId_atividadeId: { alunoId: parseInt(alunoId), atividadeId: parseInt(atividadeId) } },
+        update: { valor: parseFloat(valor) },
+        create: {
+            alunoId: parseInt(alunoId),
+            atividadeId: parseInt(atividadeId),
+            valor: parseFloat(valor)
+        }
+    });
     res.json(grade);
 }));
 
 app.get('/api/ranking', asyncHandler(async (req, res) => {
-    const { classId, username } = req.query;
+    const { turmaId } = req.query;
+    
+    const where = {};
+    if (turmaId) where.turmaId = parseInt(turmaId);
 
-    const where = { role: 'STUDENT' };
-    if (!isJohnny(username) && classId && classId !== 'undefined') {
-        where.enrollments = {
-            some: {
-                classId: parseInt(classId),
-                status: 'APPROVED'
-            }
-        };
-    }
-
-    const users = await prisma.user.findMany({
+    const alunos = await prisma.aluno.findMany({
         where,
-        include: { 
-            grades: true, 
-            enrollments: { 
-                where: { status: 'APPROVED' },
-                include: { 
-                    class: { 
-                        include: { 
-                            teacher: {
-                                select: { name: true }
-                            } 
-                        } 
-                    } 
-                } 
-            } 
+        include: {
+            notas: true,
+            professor: { select: { nome: true } },
+            turma: { select: { nome: true } }
         }
     });
 
-    const ranking = users.map(u => {
-        const totalXP = u.grades.reduce((acc, g) => acc + (g.score * 10), 0);
-        
-        // Find teacher from the first approved enrollment
-        const approvedEnrollment = u.enrollments.find(e => e.status === 'APPROVED');
-        const teacherName = approvedEnrollment?.class?.teacher?.name || 'N/A';
-
+    const ranking = alunos.map(a => {
+        const totalXP = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
         return {
-            id: u.id,
-            name: u.name,
-            photoUrl: u.photoUrl,
+            id: a.id,
+            nome: a.nome,
             xp: totalXP,
             level: Math.floor(Math.sqrt(totalXP / 100)) + 1,
-            classes: u.enrollments.map(e => e.class.name),
-            teacherName: teacherName
+            professorNome: a.professor.nome,
+            turmaNome: a.turma.nome
         };
     }).sort((a, b) => b.xp - a.xp);
 
     res.json(ranking);
 }));
 
-// Enrollment Management
-app.get('/api/enrollments/pending', asyncHandler(async (req, res) => {
-    const { classId } = req.query;
-    if (!classId || classId === 'undefined') return res.json([]);
+// --- APP SETUP ---
 
-    const enrollments = await prisma.enrollment.findMany({
-        where: { classId: parseInt(classId), status: 'PENDING' },
-        include: { student: true }
-    });
-    res.json(enrollments);
-}));
-
-app.post('/api/enrollments/approve', asyncHandler(async (req, res) => {
-    const { enrollmentId, status } = req.body; // status: 'APPROVED' or 'REJECTED'
-    if (!enrollmentId) return res.status(400).json({ error: "ID da matrícula não fornecido" });
-
-    if (status === 'REJECTED') {
-        await prisma.enrollment.delete({ where: { id: parseInt(enrollmentId) } });
-        return res.json({ message: "Solicitação recusada e removida" });
-    }
-
-    const enrollment = await prisma.enrollment.update({
-        where: { id: parseInt(enrollmentId) },
-        data: { status }
-    });
-    res.json(enrollment);
-}));
-
-app.delete('/api/enrollments/remove', asyncHandler(async (req, res) => {
-    const { studentId, classId } = req.query;
-    await prisma.enrollment.delete({
-        where: {
-            studentId_classId: {
-                studentId: parseInt(studentId),
-                classId: parseInt(classId)
-            }
-        }
-    });
-    res.json({ message: "Aluno removido com sucesso" });
-}));
-
-// Profile update
-app.patch('/api/profile/:id', asyncHandler(async (req, res) => {
-    const { photoUrl, name, password, bio, quote, mustChangePassword } = req.body;
-    const updateData = {};
-    if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
-    if (name !== undefined) updateData.name = name;
-    if (password !== undefined) updateData.password = password;
-    if (bio !== undefined) updateData.bio = bio;
-    if (quote !== undefined) updateData.quote = quote;
-    if (mustChangePassword !== undefined) updateData.mustChangePassword = mustChangePassword;
-
-    const user = await prisma.user.update({
-        where: { id: parseInt(req.params.id) },
-        data: updateData
-    });
-    const { password: _, ...userNoPass } = user;
-    res.json(userNoPass);
-}));
-
-// 404 handler
-app.use(/\/api\/.*/, (req, res) => {
-    res.status(404).json({ error: "Rota da API não encontrada" });
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
-// Global Error handler
 app.use((err, req, res, next) => {
     console.error(err);
     res.status(err.status || 500).json({ error: err.message || "Erro interno do servidor" });
-});
-
-// Serve frontend - Catch-all route
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
 app.listen(port, '0.0.0.0', () => {

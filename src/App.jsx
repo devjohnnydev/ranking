@@ -70,7 +70,7 @@ const AppContent = () => {
 
   console.log('[DEBUG] Rendering Dashboard for role:', user.role);
   if (user.role === 'ADMIN') return <DashboardSuperAdmin />;
-  if (user.role === 'TEACHER') return <DashboardAdmin />;
+  if (user.role === 'PROFESSOR') return <DashboardAdmin />;
   return <DashboardStudent />;
 };
 

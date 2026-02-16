@@ -1,152 +1,165 @@
 import React, { useState } from 'react';
 import { useData } from './DataContext';
-import { LogIn, UserPlus, Mail, Lock, User, Code, ArrowLeft, Camera } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User, Code, ArrowLeft, Shield } from 'lucide-react';
 
 const Login = () => {
-    const { login, registerStudent } = useData();
-    const [view, setView] = useState('login'); // 'login', 'register'
+    const { login, registerStudent, updateProfessorPassword } = useData();
+    const [role, setRole] = useState('ALUNO'); // 'ALUNO', 'PROFESSOR', 'ADMIN'
     const [formData, setFormData] = useState({
-        username: '',
+        email: '',
         password: '',
-        name: '',
-        joinCode: '',
-        photoUrl: ''
+        nome: '',
+        codigo: ''
     });
 
     const [newPassword, setNewPassword] = useState('');
     const [mustChange, setMustChange] = useState(false);
-    const [tempUser, setTempUser] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (view === 'login') {
-                if (mustChange) {
-                    const res = await fetch(`/api/profile/${tempUser.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: newPassword, mustChangePassword: false })
-                    });
-                    if (res.ok) {
-                        alert('Senha alterada com sucesso! Agora você pode entrar.');
-                        setMustChange(false);
-                        setFormData({ ...formData, password: newPassword });
-                    } else {
-                        throw new Error('Falha ao atualizar senha');
-                    }
-                    return;
-                }
-                const user = await login(formData.username, formData.password);
-                if (user.mustChangePassword) {
-                    setMustChange(true);
-                    setTempUser(user);
-                }
+            if (mustChange) {
+                await updateProfessorPassword(newPassword);
+                alert('Senha alterada com sucesso! Você já está conectado.');
+                setMustChange(false);
+                return;
+            }
+
+            let credentials = {};
+            if (role === 'ALUNO') {
+                credentials = { nome: formData.nome, codigo: formData.codigo };
             } else {
-                await registerStudent(formData);
-                alert('Inscrição enviada para a Guilda! Aguarde a aprovação do seu mestre para começar as missões.');
+                credentials = { email: formData.email, password: formData.password };
+            }
+
+            const user = await login(credentials);
+
+            if (user && user.role === 'PROFESSOR' && user.primeiro_acesso) {
+                setMustChange(true);
             }
         } catch (e) {
-            alert(e.message);
+            alert(e.message || 'Erro ao realizar login');
         }
     };
 
-    const handlePhoto = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => setFormData({ ...formData, photoUrl: reader.result });
-        if (file) reader.readAsDataURL(file);
-    };
-
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem', background: 'var(--bg-dark)' }}>
             <div className="glass-card" style={{ padding: '2.5rem', width: '100%', maxWidth: '450px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', color: 'var(--primary)', textShadow: '0 0 10px rgba(255, 232, 31, 0.5)', fontWeight: '900', textTransform: 'uppercase' }}>
-                        PlayGame
+                    <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'var(--primary)', textShadow: '0 0 10px rgba(255, 232, 31, 0.3)', fontWeight: '900' }}>
+                        RANKING SENAI
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>{view === 'login' ? 'Entre na sua Guilda' : 'Novo Aluno: Criar Perfil'}</p>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                        {mustChange ? 'Alteração de Senha Obrigatória' : 'Acesse sua conta para ver o Ranking'}
+                    </p>
                 </div>
+
+                {!mustChange && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', padding: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                        {['ALUNO', 'PROFESSOR', 'ADMIN'].map(r => (
+                            <button
+                                key={r}
+                                onClick={() => setRole(r)}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+                                    background: role === r ? 'var(--primary)' : 'transparent',
+                                    color: role === r ? '#000' : 'var(--text-muted)',
+                                    fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                {r}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                     {mustChange ? (
                         <div style={{ display: 'grid', gap: '1rem' }}>
                             <div style={{ textAlign: 'center', marginBottom: '1rem', padding: '1rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px' }}>
-                                <p style={{ color: 'var(--warning)', fontWeight: 'bold' }}>Primeiro Acesso Detectado!</p>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Por favor, defina sua nova senha de mestre.</p>
+                                <p style={{ color: 'var(--warning)', fontWeight: 'bold' }}>Segurança em Primeiro Lugar!</p>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mestres devem trocar a senha no primeiro acesso.</p>
                             </div>
                             <div>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Nova Senha</label>
-                                <input 
-                                    className="input-field" 
-                                    type="password" 
-                                    placeholder="Sua nova senha secreta" 
-                                    value={newPassword} 
-                                    onChange={e => setNewPassword(e.target.value)} 
-                                    required 
+                                <input
+                                    className="input-field"
+                                    type="password"
+                                    placeholder="Sua nova senha secreta"
+                                    value={newPassword}
+                                    onChange={e => setNewPassword(e.target.value)}
+                                    required
                                 />
                             </div>
                             <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}>
-                                DEFINIR NOVA SENHA
+                                SALVAR E CONTINUAR
                             </button>
                         </div>
                     ) : (
-                        <>
-                            {view === 'register' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed var(--glass-border)', overflow: 'hidden' }}>
-                                        {formData.photoUrl ? <img src={formData.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Camera size={24} style={{ margin: '28px', color: 'var(--text-muted)' }} />}
-                                        <input type="file" hidden id="avatar" accept="image/*" onChange={handlePhoto} />
-                                        <label htmlFor="avatar" style={{ position: 'absolute', inset: 0, cursor: 'pointer' }}></label>
+                        <div style={{ display: 'grid', gap: '1.2rem' }}>
+                            {role === 'ALUNO' ? (
+                                <>
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><User size={14} /> Seu Nome</label>
+                                        <input
+                                            className="input-field"
+                                            placeholder="Ex: João da Silva"
+                                            value={formData.nome}
+                                            onChange={e => setFormData({ ...formData, nome: e.target.value })}
+                                            required
+                                        />
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Subir Foto (Opcional)</span>
-                                </div>
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Code size={14} /> Código da Turma</label>
+                                        <input
+                                            className="input-field"
+                                            placeholder="Código do seu professor"
+                                            value={formData.codigo}
+                                            onChange={e => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
+                                            required
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Mail size={14} /> E-mail</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            placeholder="seu@email.com"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Senha</label>
+                                        <input
+                                            className="input-field"
+                                            type="password"
+                                            placeholder="••••••••"
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </>
                             )}
 
-                            <div style={{ display: 'grid', gap: '1rem' }}>
-                                {view === 'register' && (
-                                    <>
-                                        <div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><User size={14} /> Nome Completo</label>
-                                            <input className="input-field" placeholder="Ex: João Silva" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Code size={14} /> Código da Turma</label>
-                                            <input className="input-field" placeholder="Fornecido pelo professor" value={formData.joinCode} onChange={e => setFormData({ ...formData, joinCode: e.target.value.toUpperCase() })} required />
-                                        </div>
-                                    </>
-                                )}
-
-                                <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Mail size={14} /> Usuário / E-mail</label>
-                                    <input className="input-field" placeholder="Seu nome de usuário" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} required />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Senha</label>
-                                    <input className="input-field" type="password" placeholder="••••••••" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                                </div>
-                            </div>
-
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}>
-                                {view === 'login' ? 'ENTRAR' : 'CONCLUIR CADASTRO'} {view === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', padding: '1rem', gap: '0.5rem' }}>
+                                {role === 'ALUNO' ? 'ENTRAR NO RANKING' : 'ACESSAR PAINEL'}
+                                <LogIn size={18} />
                             </button>
-                        </>
+                        </div>
                     )}
                 </form>
 
-                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                    {view === 'login' ? (
-                        <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('register')}>
-                            <span style={{ color: '#000000', fontWeight: 'bold' }}>Não tem conta?</span> <span style={{ color: 'var(--primary)', marginLeft: '4px', fontWeight: 'bold' }}>Cadastrar como Aluno</span>
-                        </button>
-                    ) : (
-                        <button className="btn nav-btn" style={{ width: '100%', justifyContent: 'center', fontSize: '0.85rem' }} onClick={() => setView('login')}>
-                            <ArrowLeft size={16} color="#000000" /> <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Voltar para Login</span>
-                        </button>
-                    )}
+                <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        Desenvolvido por <strong>Johnny Oliveira</strong>
+                    </p>
                 </div>
-
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 'bold', textAlign: 'center', marginTop: '1.5rem' }}>Desenvolvido pelo professor Johnny Braga de Oliveira</p>
             </div>
         </div>
     );
