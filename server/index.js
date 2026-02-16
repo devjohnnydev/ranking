@@ -85,62 +85,30 @@ initAdmin().catch(console.error);
 // --- AUTH ROUTES ---
 
 app.post('/api/auth/login', asyncHandler(async (req, res) => {
-    const { email, password, nome, codigo } = req.body;
+    const { email, password } = req.body;
 
-    // 1. Aluno Entry (Nome + Código) - Seamless login/registration
-    if (nome && codigo) {
-        const normalizedCode = codigo.trim().toUpperCase();
-
-        // Find the class first
-        const turma = await prisma.turma.findUnique({
-            where: { codigo: normalizedCode },
-            include: { professor: true }
-        });
-
-        if (!turma) {
-            return res.status(404).json({ error: 'Código de turma inválido' });
-        }
-
-        // Find or Create the student in this class
-        let student = await prisma.aluno.findFirst({
-            where: {
-                nome: { equals: nome, mode: 'insensitive' },
-                turmaId: turma.id
-            },
-            include: { professor: true, turma: true }
-        });
-
-        if (!student) {
-            student = await prisma.aluno.create({
-                data: {
-                    nome,
-                    professorId: turma.professorId,
-                    turmaId: turma.id
-                },
-                include: { professor: true, turma: true }
-            });
-            console.log(`New student registered: ${nome} in class ${turma.nome}`);
-        }
-
-        const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
-        return res.json({ token, user: { ...student, role: 'ALUNO' } });
-    }
-
-    // 2. Admin Login
+    // 1. Admin Login
     const admin = await prisma.administrador.findUnique({ where: { email } });
     if (admin && await bcrypt.compare(password, admin.senha_hash)) {
         const token = jwt.sign({ id: admin.id, role: 'ADMIN', name: admin.nome }, JWT_SECRET);
         return res.json({ token, user: { ...admin, role: 'ADMIN' } });
     }
 
-    // 3. Professor Login
+    // 2. Professor Login
     const professor = await prisma.professor.findUnique({ where: { email } });
     if (professor && await bcrypt.compare(password, professor.senha_hash)) {
         const token = jwt.sign({ id: professor.id, role: 'PROFESSOR', name: professor.nome }, JWT_SECRET);
         return res.json({ token, user: { ...professor, role: 'PROFESSOR' } });
     }
 
-    res.status(401).json({ error: 'Credenciais inválidas' });
+    // 3. Aluno Login
+    const student = await prisma.aluno.findUnique({ where: { email } });
+    if (student && student.senha_hash && await bcrypt.compare(password, student.senha_hash)) {
+        const token = jwt.sign({ id: student.id, role: 'ALUNO', name: student.nome }, JWT_SECRET);
+        return res.json({ token, user: { ...student, role: 'ALUNO' } });
+    }
+
+    res.status(401).json({ error: 'E-mail ou senha incorretos' });
 }));
 
 // --- ADMIN ROUTES ---
@@ -187,6 +155,16 @@ app.post('/api/admin/professores/:id/reset-senha', authenticate, authorize(['ADM
         data: { senha_hash: hashedPass, primeiro_acesso: true }
     });
     res.json({ message: "Senha resetada para padrão (senaisaopaulo) com sucesso" });
+}));
+
+app.post('/api/admin/alunos/:id/reset-senha', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const hashedPass = await bcrypt.hash('senai123', 10);
+    await prisma.aluno.update({
+        where: { id: parseInt(id) },
+        data: { senha_hash: hashedPass }
+    });
+    res.json({ message: "Senha resetada para 'senai123'" });
 }));
 
 app.delete('/api/admin/professores/:id', authenticate, authorize(['ADMIN']), asyncHandler(async (req, res) => {
@@ -260,17 +238,24 @@ app.get('/api/alunos', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHan
     res.json(alunos);
 }));
 
-// Aluno self-registration
+// Aluno registration
 app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
-    const { nome, codigo } = req.body;
+    const { nome, email, password, codigo } = req.body;
     const normalizedCode = codigo?.trim().toUpperCase();
 
     const turma = await prisma.turma.findUnique({ where: { codigo: normalizedCode } });
     if (!turma) return res.status(404).json({ error: "Código de turma inválido" });
 
+    const existing = await prisma.aluno.findUnique({ where: { email } });
+    if (existing) return res.status(400).json({ error: "E-mail já cadastrado" });
+
+    const hashedPass = await bcrypt.hash(password, 10);
+
     const aluno = await prisma.aluno.create({
         data: {
             nome,
+            email,
+            senha_hash: hashedPass,
             professorId: turma.professorId,
             turmaId: turma.id
         }
@@ -278,6 +263,16 @@ app.post('/api/auth/register-aluno', asyncHandler(async (req, res) => {
 
     const token = jwt.sign({ id: aluno.id, role: 'ALUNO', name: aluno.nome }, JWT_SECRET);
     res.json({ token, user: { ...aluno, role: 'ALUNO' } });
+}));
+
+app.patch('/api/aluno/change-password', authenticate, authorize(['ALUNO']), asyncHandler(async (req, res) => {
+    const { password } = req.body;
+    const hashedPass = await bcrypt.hash(password, 10);
+    await prisma.aluno.update({
+        where: { id: req.user.id },
+        data: { senha_hash: hashedPass }
+    });
+    res.json({ message: "Senha atualizada" });
 }));
 
 // --- GAME LOGIC (Missions, Activities, Grades) ---

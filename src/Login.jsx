@@ -5,6 +5,7 @@ import { LogIn, UserPlus, Mail, Lock, User, Code, ArrowLeft, Shield } from 'luci
 const Login = () => {
     const { login, registerStudent, updateProfessorPassword } = useData();
     const [role, setRole] = useState('ALUNO'); // 'ALUNO', 'PROFESSOR', 'ADMIN'
+    const [mode, setMode] = useState('LOGIN'); // 'LOGIN' or 'REGISTER'
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -25,20 +26,25 @@ const Login = () => {
                 return;
             }
 
-            let credentials = {};
-            if (role === 'ALUNO') {
-                credentials = { nome: formData.nome, codigo: formData.codigo };
-            } else {
-                credentials = { email: formData.email, password: formData.password };
+            if (mode === 'REGISTER' && role === 'ALUNO') {
+                await registerStudent({
+                    nome: formData.nome,
+                    email: formData.email,
+                    password: formData.password,
+                    codigo: formData.codigo
+                });
+                alert('Cadastro realizado com sucesso!');
+                return;
             }
 
+            let credentials = { email: formData.email, password: formData.password };
             const user = await login(credentials);
 
             if (user && user.role === 'PROFESSOR' && user.primeiro_acesso) {
                 setMustChange(true);
             }
         } catch (e) {
-            alert(e.message || 'Erro ao realizar login');
+            alert(e.message || 'Erro ao realizar ação');
         }
     };
 
@@ -50,7 +56,8 @@ const Login = () => {
                         RANKING SENAI
                     </h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        {mustChange ? 'Alteração de Senha Obrigatória' : 'Acesse sua conta para ver o Ranking'}
+                        {mustChange ? 'Alteração de Senha Obrigatória' :
+                            mode === 'REGISTER' ? 'Crie sua ficha de Aventureiro' : 'Acesse sua conta para ver o Ranking'}
                     </p>
                 </div>
 
@@ -59,7 +66,7 @@ const Login = () => {
                         {['ALUNO', 'PROFESSOR', 'ADMIN'].map(r => (
                             <button
                                 key={r}
-                                onClick={() => setRole(r)}
+                                onClick={() => { setRole(r); setMode('LOGIN'); }}
                                 style={{
                                     flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
                                     background: role === r ? 'var(--primary)' : 'transparent',
@@ -97,69 +104,77 @@ const Login = () => {
                         </div>
                     ) : (
                         <div style={{ display: 'grid', gap: '1.2rem' }}>
-                            {role === 'ALUNO' ? (
-                                <>
-                                    <div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><User size={14} /> Seu Nome</label>
-                                        <input
-                                            className="input-field"
-                                            placeholder="Ex: João da Silva"
-                                            value={formData.nome}
-                                            onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Code size={14} /> Código da Turma</label>
-                                        <input
-                                            className="input-field"
-                                            placeholder="Código do seu professor"
-                                            value={formData.codigo}
-                                            onChange={e => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
-                                            required
-                                        />
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Mail size={14} /> E-mail</label>
-                                        <input
-                                            className="input-field"
-                                            type="email"
-                                            placeholder="seu@email.com"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Senha</label>
-                                        <input
-                                            className="input-field"
-                                            type="password"
-                                            placeholder="••••••••"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </>
+                            {mode === 'REGISTER' && (
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><User size={14} /> Seu Nome</label>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Ex: João da Silva"
+                                        value={formData.nome}
+                                        onChange={e => setFormData({ ...formData, nome: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Mail size={14} /> E-mail</label>
+                                <input
+                                    className="input-field"
+                                    type="email"
+                                    placeholder="seu@email.com"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Lock size={14} /> Senha</label>
+                                <input
+                                    className="input-field"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            {mode === 'REGISTER' && (
+                                <div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}><Code size={14} /> Código da Turma</label>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Código fornecido pelo professor"
+                                        value={formData.codigo}
+                                        onChange={e => setFormData({ ...formData, codigo: e.target.value.toUpperCase() })}
+                                        required
+                                    />
+                                </div>
                             )}
 
                             <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', padding: '1rem', gap: '0.5rem' }}>
-                                {role === 'ALUNO' ? 'ENTRAR AGORA' : 'ACESSAR PAINEL'}
+                                {mode === 'REGISTER' ? 'CRIAR CONTA' : 'DECOLAR'}
                                 <LogIn size={18} />
                             </button>
+
+                            {role === 'ALUNO' && (
+                                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                                    {mode === 'LOGIN' ? (
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            Não tem conta? <span onClick={() => setMode('REGISTER')} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}>Cadastre-se aqui</span>
+                                        </p>
+                                    ) : (
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            Já tem conta? <span onClick={() => setMode('LOGIN')} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}>Faça login</span>
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </form>
-
-                {role === 'ALUNO' && !mustChange && (
-                    <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                        <p><strong>Aventureiro:</strong> Basta digitar seu nome e o código da guilda para entrar. Se for sua primeira vez, criaremos sua ficha automaticamente!</p>
-                    </div>
-                )}
 
                 <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>

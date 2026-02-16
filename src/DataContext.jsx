@@ -211,6 +211,21 @@ export const DataProvider = ({ children }) => {
       if (!res.ok) throw new Error("Falha ao alterar senha");
       setUser(prev => ({ ...prev, primeiro_acesso: false }));
     },
+    updateStudentPassword: async (password) => {
+      const res = await authFetch(`${API_URL}/aluno/change-password`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password })
+      });
+      if (!res.ok) throw new Error("Falha ao alterar senha");
+    },
+    resetStudentPassword: async (id) => {
+      const res = await authFetch(`${API_URL}/admin/alunos/${id}/reset-senha`, {
+        method: 'POST'
+      });
+      if (!res.ok) throw new Error("Falha ao resetar senha");
+      setNeedsRefresh(true);
+      return await res.json();
+    },
     sendMessage: async (data) => {
       const res = await authFetch(`${API_URL}/mensagens`, {
         method: 'POST',

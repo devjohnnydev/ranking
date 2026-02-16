@@ -52,6 +52,8 @@ model Turma {
 model Aluno {
   id           Int      @id @default(autoincrement())
   nome         String
+  email        String?  @unique
+  senha_hash   String?
   data_criacao DateTime @default(now())
   
   // Perfil do Aluno

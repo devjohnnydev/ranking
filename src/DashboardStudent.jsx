@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell } from 'lucide-react';
+import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw, Quote, Info, Settings, Camera, Save, BookOpen, CheckCircle, Bell, Lock } from 'lucide-react';
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, activities, grades, messages
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, activities, grades, messages
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -15,6 +15,8 @@ const DashboardStudent = () => {
         foto_url: user?.foto_url || '',
         info: user?.info || ''
     });
+
+    const [newPassword, setNewPassword] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -30,8 +32,12 @@ const DashboardStudent = () => {
         e.preventDefault();
         try {
             await updateStudentProfile(profileData);
+            if (newPassword) {
+                await updateStudentPassword(newPassword);
+                setNewPassword('');
+            }
             setShowProfileEdit(false);
-            alert('Perfil atualizado com sucesso!');
+            alert('Perfil e login atualizados com sucesso!');
             refreshAll();
         } catch (err) {
             alert('Falha ao atualizar perfil: ' + err.message);
@@ -91,23 +97,41 @@ const DashboardStudent = () => {
             {showProfileEdit && (
                 <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto' }}>
                     <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Camera size={20} /> Editar Perfil de Aventureiro
+                        <Camera size={20} /> Configurações de Aventureiro
                     </h3>
                     <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '1.2rem' }}>
-                        <div>
-                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Nome de Aventureiro</label>
-                            <input className="input-field" placeholder="Seu Nome" value={profileData.nome} onChange={e => setProfileData({ ...profileData, nome: e.target.value })} required />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Nome</label>
+                                <input className="input-field" placeholder="Seu Nome" value={profileData.nome} onChange={e => setProfileData({ ...profileData, nome: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>E-mail (Login)</label>
+                                <input className="input-field" value={user?.email || ''} disabled style={{ opacity: 0.5 }} />
+                            </div>
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>URL da Foto de Perfil</label>
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>URL da Foto</label>
                             <input className="input-field" placeholder="https://..." value={profileData.foto_url} onChange={e => setProfileData({ ...profileData, foto_url: e.target.value })} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Sobre Você / Bio</label>
-                            <textarea className="input-field" placeholder="Conte sua história..." value={profileData.info} onChange={e => setProfileData({ ...profileData, info: e.target.value })} style={{ minHeight: '100px' }} />
+                            <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.4rem', display: 'block' }}>Sobre Você</label>
+                            <textarea className="input-field" placeholder="Conte sua história..." value={profileData.info} onChange={e => setProfileData({ ...profileData, info: e.target.value })} style={{ minHeight: '80px' }} />
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}><Save size={18} /> SALVAR PERFIL</button>
+
+                        <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h4 style={{ fontSize: '0.9rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16} color="var(--primary)" /> Alterar Senha de Acesso</h4>
+                            <input
+                                className="input-field"
+                                type="password"
+                                placeholder="Nova senha (deixe em branco para não alterar)"
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}><Save size={18} /> SALVAR ALTERAÇÕES</button>
                             <button type="button" onClick={() => setShowProfileEdit(false)} className="btn glass-card" style={{ flex: 1 }}>CANCELAR</button>
                         </div>
                     </form>
@@ -202,7 +226,7 @@ const DashboardStudent = () => {
                             })}
                             {activities.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
-                                    <BookOpen size={40} style={{ marginBottom: '1rem' }} />
+                                    <BookOpen size size={40} style={{ marginBottom: '1rem' }} />
                                     <p>Nenhuma atividade lançada para sua turma ainda.</p>
                                 </div>
                             )}
