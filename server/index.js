@@ -120,13 +120,27 @@ app.delete('/api/classes/:id', asyncHandler(async (req, res) => {
     }
 
     // Delete everything associated with the class
+    const enrollments = await prisma.enrollment.findMany({
+        where: { classId: parseInt(id) },
+        select: { studentId: true }
+    });
+    const studentIds = enrollments.map(e => e.studentId);
+
     await prisma.$transaction([
         prisma.grade.deleteMany({ where: { activity: { classId: parseInt(id) } } }),
         prisma.activity.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.mission.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.enrollment.deleteMany({ where: { classId: parseInt(id) } }),
         prisma.message.deleteMany({ where: { toClassId: parseInt(id) } }),
-        prisma.class.delete({ where: { id: parseInt(id) } })
+        prisma.class.delete({ where: { id: parseInt(id) } }),
+        // Delete users who are only in this class
+        prisma.user.deleteMany({
+            where: {
+                id: { in: studentIds },
+                role: 'STUDENT',
+                enrollments: { none: {} } // They should have 0 enrollments after the delete above
+            }
+        })
     ]);
 
     res.json({ message: "Turma excluída com sucesso" });

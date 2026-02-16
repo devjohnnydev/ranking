@@ -277,7 +277,7 @@ const DashboardAdmin = () => {
                                 border: '1px solid rgba(239, 68, 68, 0.2)'
                             }}
                         >
-                            ENCERRAR SEMESTRE (APAGAR)
+                            ENCERRAR TURMA (APAGAR)
                         </button>
                     </div>
                 </div>
