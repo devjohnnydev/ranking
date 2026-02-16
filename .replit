@@ -44,4 +44,4 @@ externalPort = 3002
 [deployment]
 deploymentTarget = "autoscale"
 run = ["bash", "-c", "npx prisma db push --schema=server/prisma/schema.prisma && PORT=5000 node server/index.js"]
-build = ["bash", "-c", "npm install && cd server && npm install && cd .. && npx prisma generate --schema=server/prisma/schema.prisma && npx vite build"]
+build = ["bash", "-c", "npx prisma generate --schema=server/prisma/schema.prisma && npx vite build"]
