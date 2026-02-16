@@ -267,32 +267,34 @@ const DashboardSuperAdmin = () => {
                                 <div>
                                     <h3 style={{ marginBottom: '2rem' }}>Guilda de Mestres Ativos</h3>
                                     <div style={{ display: 'grid', gap: '1rem' }}>
-                                                <div key={t.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>{t.name}</p>
-                                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.email}</p>
-                                                        {t.mustChangePassword && <span style={{fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold'}}>Senha Padrão Ativa</span>}
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                        <div className="badge" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
-                                                            {(globalData.classes || []).filter(c => c.teacherId === t.id).length} Turmas
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => handleDeleteTeacher(t.id)}
-                                                            className="btn" 
-                                                            style={{ 
-                                                                padding: '0.5rem', 
-                                                                background: 'rgba(239, 68, 68, 0.1)', 
-                                                                color: '#ef4444', 
-                                                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                                                borderRadius: '8px'
-                                                            }}
-                                                            title="Excluir Professor"
-                                                        >
-                                                            <ShieldAlert size={18} />
-                                                        </button>
-                                                    </div>
+                                        {teachers.map(t => (
+                                            <div key={t.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>{t.name}</p>
+                                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.email}</p>
+                                                    {t.mustChangePassword && <span style={{ fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold' }}>Senha Padrão Ativa</span>}
                                                 </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div className="badge" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
+                                                        {(globalData.classes || []).filter(c => c.teacherId === t.id).length} Turmas
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleDeleteTeacher(t.id)}
+                                                        className="btn" 
+                                                        style={{ 
+                                                            padding: '0.5rem', 
+                                                            background: 'rgba(239, 68, 68, 0.1)', 
+                                                            color: '#ef4444', 
+                                                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                            borderRadius: '8px'
+                                                        }}
+                                                        title="Excluir Professor"
+                                                    >
+                                                        <ShieldAlert size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
