@@ -1,17 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus, Trash2 } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus, Trash2, Camera, Upload } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
-        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword
+        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, uploadFile
     } = useData();
 
     const [tab, setTab] = useState('ranking');
     const [showNewClass, setShowNewClass] = useState(false);
     const [showProfileEdit, setShowProfileEdit] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState(user?.foto_url || '');
+    const [selectedFile, setSelectedFile] = useState(null);
+    const fileInputRef = useRef(null);
+
+    // Helper to get full image URL
+    const getFullImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        const baseUrl = window.location.origin.includes('localhost:5000')
+            ? 'http://localhost:3001'
+            : window.location.origin;
+        return `${baseUrl}${url}`;
+    };
 
     const [newTurma, setNewTurma] = useState({ nome: '', materia: '', observacao: '' });
     const [newActivity, setNewActivity] = useState({ titulo: '', descricao: '', nota_maxima: 10 });
@@ -38,8 +51,19 @@ const DashboardAdmin = () => {
                 bio: user.bio || '',
                 mensagem_incentivo: user.mensagem_incentivo || ''
             });
+            setPreviewUrl(user.foto_url || '');
         }
     }, [user]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setPreviewUrl(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleCreateTurma = async (e) => {
         e.preventDefault();
@@ -56,11 +80,19 @@ const DashboardAdmin = () => {
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
-            await updateProfile(profileData);
+            let finalFotoUrl = profileData.foto_url;
+
+            if (selectedFile) {
+                const uploadedUrl = await uploadFile(selectedFile);
+                finalFotoUrl = uploadedUrl;
+            }
+
+            await updateProfile({ ...profileData, foto_url: finalFotoUrl });
             setShowProfileEdit(false);
+            setSelectedFile(null);
             alert('Perfil atualizado!');
         } catch (err) {
-            alert('Falha ao atualizar perfil');
+            alert('Falha ao atualizar perfil: ' + err.message);
         }
     };
 
@@ -161,11 +193,13 @@ const DashboardAdmin = () => {
         <div className="container">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div
-                        onClick={() => setShowProfileEdit(true)}
-                        style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--primary)', cursor: 'pointer', background: 'rgba(255,255,255,0.05)' }}
-                    >
-                        {user?.foto_url ? <img src={user.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={40} style={{ margin: '20px', color: 'var(--text-muted)' }} />}
+                    <div onClick={() => setShowProfileEdit(true)} style={{ position: 'relative', cursor: 'pointer' }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--secondary)', background: 'rgba(255,255,255,0.05)' }}>
+                            {user?.foto_url ? <img src={getFullImageUrl(user.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={30} style={{ margin: '15px' }} />}
+                        </div>
+                        <div style={{ position: 'absolute', top: '0', right: '0', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '4px' }}>
+                            <Camera size={12} color="white" />
+                        </div>
                     </div>
                     <div>
                         <h1 style={{ fontSize: '1.8rem', color: 'var(--primary)', textTransform: 'uppercase' }}>RANKING SENAI</h1>
@@ -206,10 +240,33 @@ const DashboardAdmin = () => {
 
             {showProfileEdit && (
                 <div className="glass-card" style={{ padding: '2rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto' }}>
-                    <h3 style={{ marginBottom: '1.5rem' }}>Editar Perfil do Mestre</h3>
+                    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Camera size={20} /> Perfil do Mestre
+                    </h3>
                     <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '1.2rem' }}>
-                        <input className="input-field" placeholder="URL da Foto" value={profileData.foto_url} onChange={e => setProfileData({ ...profileData, foto_url: e.target.value })} />
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', border: '4px solid var(--secondary)', cursor: 'pointer', position: 'relative' }}
+                            >
+                                {previewUrl ? <img src={getFullImageUrl(previewUrl)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={60} style={{ margin: '30px', color: 'var(--text-muted)' }} />}
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+                                    <Upload color="white" size={30} />
+                                </div>
+                            </div>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*" />
+                        </div>
+
+                        <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '-0.8rem' }}>URL da Foto (opcional se fez upload)</label>
+                        <input className="input-field" placeholder="https://..." value={profileData.foto_url} onChange={e => {
+                            setProfileData({ ...profileData, foto_url: e.target.value });
+                            if (e.target.value) setPreviewUrl(e.target.value);
+                        }} />
+
+                        <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '-0.8rem' }}>Bio / História</label>
                         <textarea className="input-field" placeholder="Sua Bio / História" value={profileData.bio} onChange={e => setProfileData({ ...profileData, bio: e.target.value })} style={{ minHeight: '100px' }} />
+
+                        <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '-0.8rem' }}>Mensagem de Incentivo</label>
                         <input className="input-field" placeholder="Mensagem de Incentivo" value={profileData.mensagem_incentivo} onChange={e => setProfileData({ ...profileData, mensagem_incentivo: e.target.value })} />
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>SALVAR PERFIL</button>
@@ -321,7 +378,12 @@ const DashboardAdmin = () => {
                                                         </>
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '1rem' }}>{r.nome}</td>
+                                                <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                                                        {r.foto_url ? <img src={getFullImageUrl(r.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={14} style={{ margin: '8px' }} />}
+                                                    </div>
+                                                    {r.nome}
+                                                </td>
                                                 <td style={{ padding: '1rem', color: 'var(--primary)' }}>{r.turmaNome}</td>
                                                 {user?.role === 'ADMIN' && <td style={{ padding: '1rem', color: 'var(--secondary)' }}>{r.professorNome}</td>}
                                                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{r.xp} XP</td>
@@ -350,7 +412,12 @@ const DashboardAdmin = () => {
                                 <tbody>
                                     {filteredStudents.map(s => (
                                         <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem' }}>{s.nome}</td>
+                                            <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                                                    {s.foto_url ? <img src={getFullImageUrl(s.foto_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={14} style={{ margin: '8px' }} />}
+                                                </div>
+                                                {s.nome}
+                                            </td>
                                             <td style={{ padding: '1rem', opacity: 0.8 }}>{s.email || '—'}</td>
                                             <td style={{ padding: '1rem' }}>{s.turma?.nome}</td>
                                             <td style={{ padding: '1rem' }}>
