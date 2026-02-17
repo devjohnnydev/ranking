@@ -278,7 +278,10 @@ app.get('/api/alunos', authenticate, authorize(['ADMIN', 'PROFESSOR']), asyncHan
 
     const alunos = await prisma.aluno.findMany({
         where,
-        include: { turma: true }
+        include: {
+            turma: true,
+            notas_missoes: true
+        }
     });
     res.json(alunos);
 }));

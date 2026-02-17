@@ -10,7 +10,7 @@ export const useData = () => {
       messages: [], ranking: [], login: async () => false, logout: () => { },
       registerStudent: async () => { }, createClass: async () => { },
       joinClass: async () => { }, addActivity: async () => { }, addMission: async () => { },
-      setStudentGrade: async () => { }, sendMessage: async () => { },
+      setStudentGrade: async () => { }, gradeMission: async () => { }, sendMessage: async () => { },
       updateProfile: async () => { }, approveEnrollment: async () => { }, refreshAll: () => { }
     };
   }
@@ -302,6 +302,15 @@ export const DataProvider = ({ children }) => {
         method: 'PATCH'
       });
       if (!res.ok) throw new Error("Falha ao marcar mensagem como lida");
+      setNeedsRefresh(true);
+      return await res.json();
+    },
+    gradeMission: async (missionId, alunoId, valor) => {
+      const res = await authFetch(`${API_URL}/missoes/${missionId}/avaliar`, {
+        method: 'POST',
+        body: JSON.stringify({ alunoId, valor })
+      });
+      if (!res.ok) throw new Error("Falha ao avaliar missão");
       setNeedsRefresh(true);
       return await res.json();
     },

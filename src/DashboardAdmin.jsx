@@ -7,10 +7,11 @@ const DashboardAdmin = () => {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
         createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, deleteStudent, uploadFile,
-        missions, addMission, deleteMission
+        missions, addMission, deleteMission, gradeMission
     } = useData();
 
     const [tab, setTab] = useState('ranking');
+    const [selectedMissionForGrading, setSelectedMissionForGrading] = useState(null);
     const [showNewClass, setShowNewClass] = useState(false);
     const [showProfileEdit, setShowProfileEdit] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(user?.foto_url || '');
@@ -189,13 +190,24 @@ const DashboardAdmin = () => {
     };
 
     const handleDeleteMission = async (id, titulo) => {
-        if (window.confirm(`Deseja realmente excluir a missão "${titulo}"? Esta ação não pode ser desfeita.`)) {
+        if (window.confirm(`Tem certeza que deseja excluir a missão "${titulo}"?`)) {
             try {
                 await deleteMission(id);
                 alert('Missão excluída com sucesso!');
             } catch (err) {
                 alert('Erro ao excluir missão: ' + err.message);
             }
+        }
+    };
+
+    const handleSaveMissionGrade = async (alunoId, valor) => {
+        if (!selectedMissionForGrading) return;
+        try {
+            await gradeMission(selectedMissionForGrading.id, alunoId, valor);
+            // Mostrar feedback visual (opcional, por enquanto o alert serve)
+            // alert('Nota salva!'); 
+        } catch (err) {
+            alert('Erro ao salvar nota: ' + err.message);
         }
     };
 
@@ -642,27 +654,126 @@ const DashboardAdmin = () => {
                                                         <span>👤 Criado por: {m.professor?.nome}</span>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteMission(m.id, m.titulo)}
-                                                    className="btn glass-card"
-                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                                >
-                                                    <Trash2 size={14} /> EXCLUIR
-                                                </button>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                    <button
+                                                        onClick={() => setSelectedMissionForGrading(m)}
+                                                        className="btn glass-card"
+                                                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
+                                                    >
+                                                        <Star size={14} /> AVALIAR
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteMission(m.id, m.titulo)}
+                                                        className="btn glass-card"
+                                                        style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                    >
+                                                        <Trash2 size={14} /> EXCLUIR
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
                                     ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                    </div>
+                )}
+                    </main>
+
+            {selectedMissionForGrading && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(5px)' }}>
+                        <div className="glass-card" style={{ width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#1a1a1a', border: '1px solid var(--primary)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+                                <Star fill="gold" color="gold" /> Avaliar Missão: {selectedMissionForGrading.titulo}
+                            </h3>
+
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                            <th style={{ textAlign: 'left', padding: '1rem' }}>ALUNO</th>
+                                            <th style={{ textAlign: 'center', padding: '1rem' }}>NOTA (0-10)</th>
+                                            <th style={{ textAlign: 'center', padding: '1rem' }}>XP GERADO (3x)</th>
+                                            <th style={{ textAlign: 'right', padding: '1rem' }}>AÇÃO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredStudents.map(student => (
+                                            <StudentGradeRow
+                                                key={student.id}
+                                                student={student}
+                                                missionId={selectedMissionForGrading.id}
+                                                onSave={handleSaveMissionGrade}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <button
+                                onClick={() => setSelectedMissionForGrading(null)}
+                                className="btn btn-secondary"
+                                style={{ marginTop: '2rem', width: '100%' }}
+                            >
+                                FECHAR AVALIAÇÃO
+                            </button>
                         </div>
                     </div>
                 )}
-            </main>
 
-            <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-                <p>Gerenciador de Ranking - SENAI</p>
-            </footer>
+                <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+                    <p>Gerenciador de Ranking - SENAI</p>
+                </footer>
         </div>
+    );
+};
+
+const StudentGradeRow = ({ student, missionId, onSave }) => {
+    // Encontrar nota existente para esta missão
+    const existingGrade = student.notas_missoes?.find(n => n.missaoId === missionId);
+    const [grade, setGrade] = useState(existingGrade?.valor || '');
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = async () => {
+        if (grade === '' || isNaN(grade)) return alert('Digite uma nota válida');
+        await onSave(student.id, grade);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    return (
+        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                    {student.foto_url ? <img src={student.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserCircle size={30} color="var(--text-muted)" />}
+                </div>
+                <span>{student.nome}</span>
+            </td>
+            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    className="input-field"
+                    style={{ width: '80px', textAlign: 'center', padding: '0.4rem' }}
+                    value={grade}
+                    onChange={e => setGrade(e.target.value)}
+                    placeholder="-"
+                />
+            </td>
+            <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--warning)' }}>
+                {grade ? `+${(parseFloat(grade) * 3).toFixed(0)} XP` : '-'}
+            </td>
+            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                <button
+                    onClick={handleSave}
+                    className={`btn ${saved ? 'btn-success' : 'btn-primary'}`}
+                    style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', minWidth: '80px' }}
+                >
+                    {saved ? <CheckCircle size={14} /> : 'SALVAR'}
+                </button>
+            </td>
+        </tr>
     );
 };
 
