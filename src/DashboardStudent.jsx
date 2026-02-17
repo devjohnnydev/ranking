@@ -4,7 +4,7 @@ import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages, joinClass, markMessageAsRead
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages, joinClass, markMessageAsRead, missions
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -280,9 +280,10 @@ const DashboardStudent = () => {
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Ranking da Guilda</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`} style={{ flex: 1 }}><BookOpen size={18} /> Minhas Notas</button>
                 <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`} style={{ flex: 1, position: 'relative' }}>
-                    <Bell size={18} /> {unreadCount > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{unreadCount}</span>} Murais de Recados
+                    <Bell size={18} /> {unreadCount > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{unreadCount}</span>} Recados
                 </button>
-                <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Trophy size={18} /> Meu Status</button>
+                <button onClick={() => setTab('missoes')} className={`btn ${tab === 'missoes' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Star size={18} /> Missões</button>
+                <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Trophy size={18} /> Status</button>
             </nav>
 
             <main className="glass-card" style={{ padding: '2.5rem' }}>
@@ -378,7 +379,35 @@ const DashboardStudent = () => {
                             {activities.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
                                     <BookOpen size={40} style={{ marginBottom: '1rem' }} />
-                                    <p>Nenhuma atividade lançada para sua turma ainda.</p>
+                            {missions?.map(m => (
+                                <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary)' }}>{m.titulo}</h4>
+                                        <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '0.5rem' }}>{m.descricao}</p>
+                                        <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem', opacity: 0.6 }}>
+                                            <span>🎁 Recompensa: {m.recompensa} XP</span>
+                                            {m.prazo && <span>⏰ Prazo: {new Date(m.prazo).toLocaleString()}</span>}
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        {m.notas && m.notas.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
+                                                <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--secondary)' }}>{m.notas[0].valor} / 10</span>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold' }}>+ {Math.round(m.notas[0].valor * 3)} XP GANHOS</span>
+                                            </div>
+                                        ) : (
+                                            <div style={{ opacity: 0.4, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <RefreshCw size={16} />
+                                                <span>Aguardando Avaliação</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {(!missions || missions.length === 0) && (
+                                <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
+                                    <Star size={40} style={{ marginBottom: '1rem' }} />
+                                    <p>Nenhuma missão disponível no momento.</p>
                                 </div>
                             )}
                         </div>
@@ -496,12 +525,12 @@ const DashboardStudent = () => {
                         </div>
                     </div>
                 )}
-            </main>
+            </main >
 
-            <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-                <p>Desenvolvido pelo Professor Johnny Oliveira</p>
-            </footer>
-        </div>
+    <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+        <p>Desenvolvido pelo Professor Johnny Oliveira</p>
+    </footer>
+        </div >
     );
 };
 

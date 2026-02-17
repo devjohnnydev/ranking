@@ -697,12 +697,20 @@ app.get('/api/missoes', authenticate, asyncHandler(async (req, res) => {
 
     if (turmaId) where.turmaId = parseInt(turmaId);
 
+    const include = {
+        professor: { select: { nome: true } },
+        turma: { select: { nome: true } }
+    };
+
+    if (req.user.role === 'ALUNO') {
+        include.notas = {
+            where: { alunoId: req.user.id }
+        };
+    }
+
     const missoes = await prisma.missao.findMany({
         where,
-        include: {
-            professor: { select: { nome: true } },
-            turma: { select: { nome: true } }
-        },
+        include,
         orderBy: { data_criacao: 'desc' }
     });
     res.json(missoes);
