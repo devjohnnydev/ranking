@@ -419,10 +419,13 @@ app.get('/api/mensagens', authenticate, asyncHandler(async (req, res) => {
         const student = await prisma.aluno.findUnique({ where: { id: req.user.id } });
         where.OR = [
             { alunoId: req.user.id },
-            { turmaId: student.turmaId }
+            { turmaId: student.turmaId },
+            { tipo: 'decreto_supremo', alunoId: null, turmaId: null } // Decretos globais
         ];
     } else if (req.user.role === 'PROFESSOR') {
         where.professorId = req.user.id;
+    } else if (req.user.role === 'ADMIN') {
+        where.adminId = req.user.id;
     }
 
     const mensagens = await prisma.mensagem.findMany({
@@ -430,6 +433,7 @@ app.get('/api/mensagens', authenticate, asyncHandler(async (req, res) => {
         orderBy: { data_criacao: 'desc' },
         include: {
             professor: { select: { nome: true } },
+            administrador: { select: { nome: true } },
             aluno: { select: { nome: true } },
             turma: { select: { nome: true } }
         }
@@ -437,12 +441,63 @@ app.get('/api/mensagens', authenticate, asyncHandler(async (req, res) => {
     res.json(mensagens);
 }));
 
-app.post('/api/mensagens', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
-    const { conteudo, alunoId, turmaId } = req.body;
+app.post('/api/mensagens', authenticate, authorize(['PROFESSOR', 'ADMIN']), asyncHandler(async (req, res) => {
+    const { conteudo, alunoId, turmaId, tipo } = req.body;
+
+    // DECRETO SUPREMO - Apenas ADMIN
+    if (tipo === 'decreto_supremo') {
+        if (req.user.role !== 'ADMIN') {
+            return res.status(403).json({ error: "Apenas administradores podem enviar decretos supremos" });
+        }
+
+        const mensagem = await prisma.mensagem.create({
+            data: {
+                conteudo,
+                tipo: 'decreto_supremo',
+                adminId: req.user.id,
+                // Sem alunoId/turmaId = mensagem global
+                alunoId: alunoId ? parseInt(alunoId) : null,
+                turmaId: turmaId ? parseInt(turmaId) : null
+            }
+        });
+        return res.json(mensagem);
+    }
+
+    // MENSAGEM NORMAL - PROFESSOR
+    if (req.user.role === 'PROFESSOR') {
+        // Validar alunoId - só pode enviar para alunos de suas turmas
+        if (alunoId) {
+            const aluno = await prisma.aluno.findUnique({
+                where: { id: parseInt(alunoId) }
+            });
+            if (!aluno || aluno.professorId !== req.user.id) {
+                return res.status(403).json({
+                    error: "Você só pode enviar mensagens para alunos de suas turmas"
+                });
+            }
+        }
+
+        // Validar turmaId - só pode enviar para suas turmas
+        if (turmaId) {
+            const turma = await prisma.turma.findUnique({
+                where: { id: parseInt(turmaId) }
+            });
+            if (!turma || turma.professorId !== req.user.id) {
+                return res.status(403).json({
+                    error: "Você só pode enviar mensagens para suas turmas"
+                });
+            }
+        }
+    }
+
+    // ADMIN pode enviar para qualquer aluno/turma (sem validação)
+
     const mensagem = await prisma.mensagem.create({
         data: {
             conteudo,
-            professorId: req.user.id,
+            tipo: tipo || 'normal',
+            professorId: req.user.role === 'PROFESSOR' ? req.user.id : null,
+            adminId: req.user.role === 'ADMIN' ? req.user.id : null,
             alunoId: alunoId ? parseInt(alunoId) : null,
             turmaId: turmaId ? parseInt(turmaId) : null
         }

@@ -12,6 +12,7 @@ model Administrador {
   nome       String
   email      String   @unique
   senha_hash String
+  mensagens  Mensagem[]
 }
 
 model Professor {
@@ -116,9 +117,13 @@ model Mensagem {
   id           Int      @id @default(autoincrement())
   conteudo     String
   data_criacao DateTime @default(now())
+  tipo         String   @default("normal")
   
   professor    Professor? @relation(fields: [professorId], references: [id], onDelete: Cascade)
   professorId  Int?
+  
+  administrador Administrador? @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId       Int?
   
   aluno        Aluno?    @relation("AlunoMensagens", fields: [alunoId], references: [id], onDelete: Cascade)
   alunoId      Int?

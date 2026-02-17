@@ -387,18 +387,40 @@ const DashboardStudent = () => {
                             {messages.map(m => (
                                 <div key={m.id} className="glass-card" style={{
                                     padding: '1.5rem',
-                                    background: m.alunoId ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 232, 31, 0.05)',
-                                    borderLeft: m.alunoId ? '4px solid var(--secondary)' : '4px solid var(--primary)'
+                                    background: m.tipo === 'decreto_supremo'
+                                        ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.05))'
+                                        : m.alunoId ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 232, 31, 0.05)',
+                                    borderLeft: m.tipo === 'decreto_supremo'
+                                        ? '6px solid gold'
+                                        : m.alunoId ? '4px solid var(--secondary)' : '4px solid var(--primary)',
+                                    boxShadow: m.tipo === 'decreto_supremo'
+                                        ? '0 0 20px rgba(255, 215, 0, 0.3)'
+                                        : 'none'
                                 }}>
+                                    {m.tipo === 'decreto_supremo' && (
+                                        <div style={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            color: 'gold',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            marginBottom: '0.8rem',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '1px'
+                                        }}>
+                                            ⚡ DECRETO SUPREMO ⚡
+                                        </div>
+                                    )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                                        <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: m.alunoId ? 'var(--secondary)' : 'var(--primary)' }}>
-                                            {m.alunoId ? '👤 MENSAGEM INDIVIDUAL' : '📣 AVISO GERAL'}
+                                        <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: m.tipo === 'decreto_supremo' ? 'gold' : m.alunoId ? 'var(--secondary)' : 'var(--primary)' }}>
+                                            {m.tipo === 'decreto_supremo' ? '👑 ADMINISTRAÇÃO SUPERIOR' : m.alunoId ? '👤 MENSAGEM INDIVIDUAL' : '📣 AVISO GERAL'}
                                         </span>
                                         <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date(m.data_criacao).toLocaleString()}</span>
                                     </div>
                                     <p style={{ lineHeight: '1.6', margin: 0, fontSize: '1.05rem' }}>{m.conteudo}</p>
                                     <div style={{ marginTop: '0.8rem', textAlign: 'right', fontSize: '0.75rem', opacity: 0.6 }}>
-                                        — {m.professor?.nome || 'Seu Mestre'}
+                                        — {m.administrador?.nome || m.professor?.nome || 'Seu Mestre'}
                                     </div>
                                 </div>
                             ))}
