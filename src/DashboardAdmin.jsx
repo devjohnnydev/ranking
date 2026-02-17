@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useData } from './DataContext';
-import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus, Trash2, Camera, Upload } from 'lucide-react';
+import { Trophy, Users, Star, Plus, Send, LogOut, Award, BookOpen, RefreshCw, Key, Image as ImageIcon, UserCircle, CheckCircle, MessageCircle, Megaphone, Lock, ShieldAlert, Filter, TrendingUp, TrendingDown, Minus, Trash2, Camera, Upload, Target } from 'lucide-react';
 
 const DashboardAdmin = () => {
     const {
         logout, user, classes, selectedClass, setSelectedClass,
         addActivity, setStudentGrade, ranking, refreshAll, loading,
-        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, deleteStudent, uploadFile
+        createClass, deleteClass, updateProfile, activities, students, sendMessage, messages, resetStudentPassword, deleteStudent, uploadFile,
+        missions, addMission, deleteMission
     } = useData();
 
     const [tab, setTab] = useState('ranking');
@@ -36,6 +37,9 @@ const DashboardAdmin = () => {
 
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [editGrades, setEditGrades] = useState({});
+
+    // Mission state
+    const [newMission, setNewMission] = useState({ titulo: '', descricao: '', recompensa: 0, prazo: '' });
 
     // Messaging state
     const [msgTarget, setMsgTarget] = useState('turma'); // 'turma' or alumnoId
@@ -172,9 +176,33 @@ const DashboardAdmin = () => {
         }
     };
 
+    const handleAddMission = async (e) => {
+        e.preventDefault();
+        if (!selectedClass) return alert('Selecione uma turma primeiro');
+        try {
+            await addMission(newMission);
+            setNewMission({ titulo: '', descricao: '', recompensa: 0, prazo: '' });
+            alert('Missão criada com sucesso!');
+        } catch (err) {
+            alert('Falha ao criar missão: ' + err.message);
+        }
+    };
+
+    const handleDeleteMission = async (id, titulo) => {
+        if (window.confirm(`Deseja realmente excluir a missão "${titulo}"? Esta ação não pode ser desfeita.`)) {
+            try {
+                await deleteMission(id);
+                alert('Missão excluída com sucesso!');
+            } catch (err) {
+                alert('Erro ao excluir missão: ' + err.message);
+            }
+        }
+    };
+
     const filteredStudents = students.filter(s => !selectedClass || s.turmaId === selectedClass.id);
     const filteredActivities = activities.filter(a => !selectedClass || a.turmaId === selectedClass.id);
     const filteredMessages = messages.filter(m => !selectedClass || m.turmaId === selectedClass.id || (m.aluno && filteredStudents.some(s => s.id === m.alunoId)));
+    const filteredMissions = missions.filter(m => !selectedClass || m.turmaId === selectedClass.id);
 
     // Ranking filtering logic
     const filteredRanking = useMemo(() => {
@@ -328,6 +356,7 @@ const DashboardAdmin = () => {
             <nav style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`}><Trophy size={18} /> Ranking</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`}><Plus size={18} /> Atividades/Notas</button>
+                <button onClick={() => setTab('missoes')} className={`btn ${tab === 'missoes' ? 'btn-active' : ''}`}><Target size={18} /> Missões</button>
                 <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`}><MessageCircle size={18} /> Mensagens</button>
                 <button onClick={() => setTab('alunos')} className={`btn ${tab === 'alunos' ? 'btn-active' : ''}`}><Users size={18} /> Alunos</button>
             </nav>
@@ -561,6 +590,70 @@ const DashboardAdmin = () => {
                                 ))}
                                 {filteredMessages.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5 }}>{selectedClass ? 'Nenhuma mensagem enviada nesta turma.' : 'Selecione uma turma para ver o histórico.'}</p>}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'missoes' && (
+                    <div style={{ display: 'grid', gap: '2rem' }}>
+                        <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Target size={20} /> Criar Nova Missão</h3>
+                            <form onSubmit={handleAddMission} style={{ display: 'grid', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Título da Missão</label>
+                                        <input className="input-field" placeholder="Ex: Completar Projeto Final" value={newMission.titulo} onChange={e => setNewMission({ ...newMission, titulo: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Recompensa (XP)</label>
+                                        <input className="input-field" type="number" placeholder="0" value={newMission.recompensa} onChange={e => setNewMission({ ...newMission, recompensa: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Descrição</label>
+                                    <textarea className="input-field" placeholder="Descreva os objetivos da missão..." value={newMission.descricao} onChange={e => setNewMission({ ...newMission, descricao: e.target.value })} style={{ minHeight: '80px' }} required />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.3rem', display: 'block' }}>Prazo (Opcional)</label>
+                                    <input className="input-field" type="datetime-local" value={newMission.prazo} onChange={e => setNewMission({ ...newMission, prazo: e.target.value })} />
+                                </div>
+                                <button type="submit" className="btn btn-primary" disabled={!selectedClass}>CRIAR MISSÃO</button>
+                                {!selectedClass && <p style={{ color: 'var(--danger)', fontSize: '0.7rem', marginTop: '-0.5rem' }}>* Selecione uma turma primeiro.</p>}
+                            </form>
+                        </div>
+
+                        <div>
+                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Target size={20} /> Missões Ativas</h3>
+                            {filteredMissions.length === 0 ? (
+                                <p style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>{selectedClass ? 'Nenhuma missão criada para esta turma.' : 'Selecione uma turma para ver as missões.'}</p>
+                            ) : (
+                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                    {filteredMissions.map(m => (
+                                        <div key={m.id} className="glass-card" style={{ padding: '1.5rem', background: 'rgba(255, 255, 255, 0.02)', borderLeft: '4px solid var(--primary)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h4 style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Target size={18} /> {m.titulo}
+                                                    </h4>
+                                                    <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '0.5rem' }}>{m.descricao}</p>
+                                                    <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem', opacity: 0.6 }}>
+                                                        <span>🎁 Recompensa: {m.recompensa} XP</span>
+                                                        {m.prazo && <span>⏰ Prazo: {new Date(m.prazo).toLocaleString()}</span>}
+                                                        <span>👤 Criado por: {m.professor?.nome}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteMission(m.id, m.titulo)}
+                                                    className="btn glass-card"
+                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                >
+                                                    <Trash2 size={14} /> EXCLUIR
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

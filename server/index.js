@@ -501,6 +501,78 @@ app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(asyn
     res.json(grade);
 }));
 
+// --- MISSIONS ROUTES ---
+
+app.post('/api/missoes', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { titulo, descricao, recompensa, prazo, turmaId } = req.body;
+
+    // Verify ownership of the class
+    const turma = await prisma.turma.findFirst({
+        where: { id: parseInt(turmaId), professorId: req.user.id }
+    });
+    if (!turma) return res.status(403).json({ error: "Você não tem permissão para esta turma" });
+
+    const missao = await prisma.missao.create({
+        data: {
+            titulo,
+            descricao,
+            recompensa: parseInt(recompensa) || 0,
+            prazo: prazo ? new Date(prazo) : null,
+            turmaId: parseInt(turmaId),
+            professorId: req.user.id
+        }
+    });
+    res.json(missao);
+}));
+
+app.get('/api/missoes', authenticate, asyncHandler(async (req, res) => {
+    const { turmaId } = req.query;
+    const where = {};
+
+    if (req.user.role === 'PROFESSOR') {
+        where.turma = { professorId: req.user.id };
+    } else if (req.user.role === 'ALUNO') {
+        const student = await prisma.aluno.findUnique({ where: { id: req.user.id } });
+        if (student?.turmaId) where.turmaId = student.turmaId;
+    }
+
+    if (turmaId) where.turmaId = parseInt(turmaId);
+
+    const missoes = await prisma.missao.findMany({
+        where,
+        include: {
+            professor: { select: { nome: true } },
+            turma: { select: { nome: true } }
+        },
+        orderBy: { data_criacao: 'desc' }
+    });
+    res.json(missoes);
+}));
+
+app.delete('/api/missoes/:id', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const missaoId = parseInt(id);
+
+    const missao = await prisma.missao.findUnique({
+        where: { id: missaoId },
+        include: { turma: true }
+    });
+
+    if (!missao) return res.status(404).json({ error: "Missão não encontrada" });
+
+    // Check if user is the creator OR the owner of the class
+    const canDelete = missao.professorId === req.user.id ||
+        missao.turma.professorId === req.user.id;
+
+    if (!canDelete) {
+        return res.status(403).json({ error: "Você não tem permissão para excluir esta missão" });
+    }
+
+    await prisma.missao.delete({ where: { id: missaoId } });
+    res.json({ message: "Missão excluída com sucesso" });
+}));
+
+
 app.get('/api/ranking', asyncHandler(async (req, res) => {
     const { turmaId } = req.query;
 

@@ -64,7 +64,8 @@ export const DataProvider = ({ children }) => {
         authFetch(`${API_URL}/turmas`).then(r => r.json()),
         authFetch(`${API_URL}/ranking`).then(r => r.json()),
         authFetch(`${API_URL}/atividades`).then(r => r.json()),
-        authFetch(`${API_URL}/mensagens`).then(r => r.json())
+        authFetch(`${API_URL}/mensagens`).then(r => r.json()),
+        authFetch(`${API_URL}/missoes`).then(r => r.json())
       ];
 
       if (user.role === 'ALUNO') {
@@ -73,12 +74,13 @@ export const DataProvider = ({ children }) => {
         promises.push(authFetch(`${API_URL}/alunos`).then(r => r.json()));
       }
 
-      const [resClasses, resRank, resActivities, resMessages, resExtra] = await Promise.all(promises);
+      const [resClasses, resRank, resActivities, resMessages, resMissions, resExtra] = await Promise.all(promises);
 
       setClasses(Array.isArray(resClasses) ? resClasses : []);
       setRanking(Array.isArray(resRank) ? resRank : []);
       setActivities(Array.isArray(resActivities) ? resActivities : []);
       setMessages(Array.isArray(resMessages) ? resMessages : []);
+      setMissions(Array.isArray(resMissions) ? resMissions : []);
 
       if (user.role === 'ALUNO') {
         // Map grades to a more accessible format if needed
@@ -216,6 +218,25 @@ export const DataProvider = ({ children }) => {
       const result = await res.json();
       if (res.ok) setNeedsRefresh(true);
       else throw new Error(result.error);
+    },
+    addMission: async (m) => {
+      if (!selectedClass) throw new Error("Selecione uma turma");
+      const res = await authFetch(`${API_URL}/missoes`, {
+        method: 'POST',
+        body: JSON.stringify({ ...m, turmaId: selectedClass.id })
+      });
+      const result = await res.json();
+      if (res.ok) setNeedsRefresh(true);
+      else throw new Error(result.error);
+    },
+    deleteMission: async (id) => {
+      const res = await authFetch(`${API_URL}/missoes/${id}`, {
+        method: 'DELETE'
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setNeedsRefresh(true);
+      return result;
     },
     setStudentGrade: async (alunoId, atividadeId, valor) => {
       const res = await authFetch(`${API_URL}/notas`, {
