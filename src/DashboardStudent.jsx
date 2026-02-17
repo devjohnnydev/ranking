@@ -379,6 +379,17 @@ const DashboardStudent = () => {
                             {activities.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
                                     <BookOpen size={40} style={{ marginBottom: '1rem' }} />
+                                    <p>Nenhuma atividade encontrada.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'missoes' && (
+                    <div>
+                        <h3 style={{ marginBottom: '2rem' }}>Missões e Desafios</h3>
+                        <div style={{ display: 'grid', gap: '1.5rem' }}>
                             {missions?.map(m => (
                                 <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
                                     <div>
@@ -393,7 +404,7 @@ const DashboardStudent = () => {
                                         {m.notas && m.notas.length > 0 ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
                                                 <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--secondary)' }}>{m.notas[0].valor} / 10</span>
-                                                <span style={{ fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 'bold' }}>+ {Math.round(m.notas[0].valor * 3)} XP GANHOS</span>
+                                                <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 'bold' }}>+ {Math.round(m.notas[0].valor * 3)} XP GANHOS</span>
                                             </div>
                                         ) : (
                                             <div style={{ opacity: 0.4, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -527,9 +538,9 @@ const DashboardStudent = () => {
                 )}
             </main >
 
-    <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-        <p>Desenvolvido pelo Professor Johnny Oliveira</p>
-    </footer>
+            <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+                <p>Desenvolvido pelo Professor Johnny Oliveira</p>
+            </footer>
         </div >
     );
 };
