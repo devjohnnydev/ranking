@@ -68,6 +68,7 @@ model Aluno {
   turmaId      Int?
   
   notas        Nota[]
+  notas_missoes NotaMissao[]
   mensagens    Mensagem[] @relation("AlunoMensagens")
   posicao_anterior Int?
 }
@@ -98,6 +99,8 @@ model Missao {
   
   professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
   professorId Int
+  
+  notas       NotaMissao[]
 }
 
 model Nota {
@@ -131,4 +134,19 @@ model Mensagem {
   
   turma        Turma?    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   turmaId      Int?
+}
+
+model NotaMissao {
+  id          Int      @id @default(autoincrement())
+  valor       Float    // Nota de 0 a 10
+  
+  aluno       Aluno    @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  alunoId     Int
+  
+  missao      Missao   @relation(fields: [missaoId], references: [id], onDelete: Cascade)
+  missaoId    Int
+
+  data_avaliacao DateTime @default(now())
+
+  @@unique([alunoId, missaoId])
 }

@@ -541,11 +541,16 @@ app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(asyn
     // 1. Snapshot current ranking for the whole class before the change
     const classAlunos = await prisma.aluno.findMany({
         where: { turmaId: studentInfo.turmaId },
-        include: { notas: true }
+        include: {
+            notas: true,
+            notas_missoes: true // Incluir notas de missões
+        }
     });
 
     const currentRanking = classAlunos.map(a => {
-        const totalXP = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        const xpAtividades = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        const xpMissoes = a.notas_missoes.reduce((acc, n) => acc + (n.valor * 3), 0);
+        const totalXP = xpAtividades + xpMissoes;
         return { id: a.id, xp: totalXP };
     }).sort((a, b) => b.xp - a.xp);
 
@@ -606,6 +611,76 @@ app.post('/api/missoes', authenticate, authorize(['PROFESSOR']), asyncHandler(as
     res.json(missao);
 }));
 
+app.post('/api/missoes/:id/avaliar', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { alunoId, valor } = req.body;
+    const missaoId = parseInt(id);
+
+    // Verify ownership
+    const missao = await prisma.missao.findUnique({
+        where: { id: missaoId },
+        include: { turma: true }
+    });
+
+    if (!missao) return res.status(404).json({ error: "Missão não encontrada" });
+    if (missao.professorId !== req.user.id && missao.turma.professorId !== req.user.id) {
+        return res.status(403).json({ error: "Você não tem permissão para avaliar esta missão" });
+    }
+
+    // 1. Snapshot current ranking
+    const classAlunos = await prisma.aluno.findMany({
+        where: { turmaId: missao.turmaId },
+        include: {
+            notas: true,
+            notas_missoes: true
+        }
+    });
+
+    const currentRanking = classAlunos.map(a => {
+        const xpAtividades = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        const xpMissoes = a.notas_missoes.reduce((acc, n) => acc + (n.valor * 3), 0);
+        const totalXP = xpAtividades + xpMissoes;
+        return { id: a.id, xp: totalXP };
+    }).sort((a, b) => b.xp - a.xp);
+
+    // Save current positions
+    for (let i = 0; i < currentRanking.length; i++) {
+        await prisma.aluno.update({
+            where: { id: currentRanking[i].id },
+            data: { posicao_anterior: i + 1 }
+        });
+    }
+
+    // 2. Create/Update NotaMissao
+    const notaMissao = await prisma.notaMissao.upsert({
+        where: {
+            alunoId_missaoId: {
+                alunoId: parseInt(alunoId),
+                missaoId: missaoId
+            }
+        },
+        update: { valor: parseFloat(valor) },
+        create: {
+            alunoId: parseInt(alunoId),
+            missaoId: missaoId,
+            valor: parseFloat(valor)
+        }
+    });
+
+    // 3. Create Notification
+    const xpGanho = parseFloat(valor) * 3;
+    await prisma.mensagem.create({
+        data: {
+            conteudo: `Sua missão "${missao.titulo}" foi avaliada! Nota: ${valor}. (+${xpGanho} XP)`,
+            professorId: req.user.id,
+            alunoId: parseInt(alunoId),
+            turmaId: missao.turmaId // Opcional, mas ajuda no contexto
+        }
+    });
+
+    res.json(notaMissao);
+}));
+
 app.get('/api/missoes', authenticate, asyncHandler(async (req, res) => {
     const { turmaId } = req.query;
     const where = {};
@@ -664,13 +739,18 @@ app.get('/api/ranking', asyncHandler(async (req, res) => {
         where,
         include: {
             notas: true,
+            notas_missoes: true, // Incluir notas de missões
             professor: { select: { nome: true } },
             turma: { select: { nome: true } }
         }
     });
 
     const ranking = alunos.map(a => {
-        const totalXP = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        const xpAtividades = a.notas.reduce((acc, n) => acc + (n.valor * 10), 0);
+        // XP Missões = Nota * 3 (Peso 3x)
+        const xpMissoes = a.notas_missoes.reduce((acc, n) => acc + (n.valor * 3), 0);
+        const totalXP = xpAtividades + xpMissoes;
+
         return {
             id: a.id,
             nome: a.nome,
