@@ -4,11 +4,16 @@ import { Trophy, Star, MessageSquare, User as UserIcon, LogOut, Award, RefreshCw
 
 const DashboardStudent = () => {
     const {
-        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages, joinClass
+        user, logout, ranking, loading, refreshAll, updateStudentProfile, updateStudentPassword, uploadFile, activities, grades, messages, joinClass, markMessageAsRead
     } = useData();
 
     const [tab, setTab] = useState('ranking');
     const [showProfileEdit, setShowProfileEdit] = useState(false);
+
+    // Contador de mensagens não lidas
+    const unreadCount = useMemo(() => {
+        return messages.filter(m => !m.lida).length;
+    }, [messages]);
 
     const [profileData, setProfileData] = useState({
         nome: user?.nome || '',
@@ -275,7 +280,7 @@ const DashboardStudent = () => {
                 <button onClick={() => setTab('ranking')} className={`btn ${tab === 'ranking' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Award size={18} /> Ranking da Guilda</button>
                 <button onClick={() => setTab('atividades')} className={`btn ${tab === 'atividades' ? 'btn-active' : ''}`} style={{ flex: 1 }}><BookOpen size={18} /> Minhas Notas</button>
                 <button onClick={() => setTab('mensagens')} className={`btn ${tab === 'mensagens' ? 'btn-active' : ''}`} style={{ flex: 1, position: 'relative' }}>
-                    <Bell size={18} /> {messages.length > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{messages.length}</span>} Murais de Recados
+                    <Bell size={18} /> {unreadCount > 0 && <span style={{ position: 'absolute', top: '-5px', right: '5px', background: 'var(--danger)', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px' }}>{unreadCount}</span>} Murais de Recados
                 </button>
                 <button onClick={() => setTab('status')} className={`btn ${tab === 'status' ? 'btn-active' : ''}`} style={{ flex: 1 }}><Trophy size={18} /> Meu Status</button>
             </nav>
@@ -385,18 +390,24 @@ const DashboardStudent = () => {
                         <h3 style={{ marginBottom: '2rem' }}>Mural de Avisos da Guilda</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                             {messages.map(m => (
-                                <div key={m.id} className="glass-card" style={{
-                                    padding: '1.5rem',
-                                    background: m.tipo === 'decreto_supremo'
-                                        ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.05))'
-                                        : m.alunoId ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 232, 31, 0.05)',
-                                    borderLeft: m.tipo === 'decreto_supremo'
-                                        ? '6px solid gold'
-                                        : m.alunoId ? '4px solid var(--secondary)' : '4px solid var(--primary)',
-                                    boxShadow: m.tipo === 'decreto_supremo'
-                                        ? '0 0 20px rgba(255, 215, 0, 0.3)'
-                                        : 'none'
-                                }}>
+                                <div
+                                    key={m.id}
+                                    className="glass-card"
+                                    onClick={() => !m.lida && markMessageAsRead(m.id)}
+                                    style={{
+                                        cursor: m.lida ? 'default' : 'pointer',
+                                        opacity: m.lida ? 0.7 : 1,
+                                        padding: '1.5rem',
+                                        background: m.tipo === 'decreto_supremo'
+                                            ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.05))'
+                                            : m.alunoId ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 232, 31, 0.05)',
+                                        borderLeft: m.tipo === 'decreto_supremo'
+                                            ? '6px solid gold'
+                                            : m.alunoId ? '4px solid var(--secondary)' : '4px solid var(--primary)',
+                                        boxShadow: m.tipo === 'decreto_supremo'
+                                            ? '0 0 20px rgba(255, 215, 0, 0.3)'
+                                            : 'none'
+                                    }}>
                                     {m.tipo === 'decreto_supremo' && (
                                         <div style={{
                                             fontSize: '0.75rem',

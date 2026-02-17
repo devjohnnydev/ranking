@@ -118,6 +118,7 @@ model Mensagem {
   conteudo     String
   data_criacao DateTime @default(now())
   tipo         String   @default("normal")
+  lida         Boolean  @default(false)
   
   professor    Professor? @relation(fields: [professorId], references: [id], onDelete: Cascade)
   professorId  Int?

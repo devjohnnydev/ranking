@@ -417,10 +417,16 @@ app.get('/api/mensagens', authenticate, asyncHandler(async (req, res) => {
     const where = {};
     if (req.user.role === 'ALUNO') {
         const student = await prisma.aluno.findUnique({ where: { id: req.user.id } });
+
+        // CORREÇÃO: Aluno só vê mensagens direcionadas especificamente para ele,
+        // mensagens para SUA turma, ou decretos supremos globais
         where.OR = [
+            // 1. Mensagens individuais para este aluno
             { alunoId: req.user.id },
-            { turmaId: student.turmaId },
-            { tipo: 'decreto_supremo', alunoId: null, turmaId: null } // Decretos globais
+            // 2. Mensagens para a turma deste aluno (SEM alunoId específico)
+            { turmaId: student.turmaId, alunoId: null },
+            // 3. Decretos supremos globais (sem aluno nem turma específicos)
+            { tipo: 'decreto_supremo', alunoId: null, turmaId: null }
         ];
     } else if (req.user.role === 'PROFESSOR') {
         where.professorId = req.user.id;
@@ -504,6 +510,26 @@ app.post('/api/mensagens', authenticate, authorize(['PROFESSOR', 'ADMIN']), asyn
     });
     res.json(mensagem);
 }));
+
+// Marcar mensagem como lida
+app.patch('/api/mensagens/:id/lida', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Verificar se a mensagem existe e pertence ao aluno
+    const mensagem = await prisma.mensagem.findUnique({ where: { id: parseInt(id) } });
+    if (!mensagem) {
+        return res.status(404).json({ error: "Mensagem não encontrada" });
+    }
+
+    // Marcar como lida
+    const mensagemAtualizada = await prisma.mensagem.update({
+        where: { id: parseInt(id) },
+        data: { lida: true }
+    });
+
+    res.json(mensagemAtualizada);
+}));
+
 
 app.post('/api/notas', authenticate, authorize(['PROFESSOR']), asyncHandler(async (req, res) => {
     const { alunoId, atividadeId, valor } = req.body;

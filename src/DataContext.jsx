@@ -297,6 +297,14 @@ export const DataProvider = ({ children }) => {
       setNeedsRefresh(true);
       return await res.json();
     },
+    markMessageAsRead: async (id) => {
+      const res = await authFetch(`${API_URL}/mensagens/${id}/lida`, {
+        method: 'PATCH'
+      });
+      if (!res.ok) throw new Error("Falha ao marcar mensagem como lida");
+      setNeedsRefresh(true);
+      return await res.json();
+    },
     refreshAll: () => setNeedsRefresh(true)
   }), [user, token, loading, classes, selectedClass, students, activities, missions, grades, ranking, messages, authFetch]);
 
