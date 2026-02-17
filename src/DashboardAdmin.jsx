@@ -671,58 +671,59 @@ const DashboardAdmin = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                    ))}
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
-                    </div>
-                )}
-                    </main>
-
-            {selectedMissionForGrading && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(5px)' }}>
-                        <div className="glass-card" style={{ width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#1a1a1a', border: '1px solid var(--primary)' }}>
-                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
-                                <Star fill="gold" color="gold" /> Avaliar Missão: {selectedMissionForGrading.titulo}
-                            </h3>
-
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                            <th style={{ textAlign: 'left', padding: '1rem' }}>ALUNO</th>
-                                            <th style={{ textAlign: 'center', padding: '1rem' }}>NOTA (0-10)</th>
-                                            <th style={{ textAlign: 'center', padding: '1rem' }}>XP GERADO (3x)</th>
-                                            <th style={{ textAlign: 'right', padding: '1rem' }}>AÇÃO</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredStudents.map(student => (
-                                            <StudentGradeRow
-                                                key={student.id}
-                                                student={student}
-                                                missionId={selectedMissionForGrading.id}
-                                                onSave={handleSaveMissionGrade}
-                                            />
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <button
-                                onClick={() => setSelectedMissionForGrading(null)}
-                                className="btn btn-secondary"
-                                style={{ marginTop: '2rem', width: '100%' }}
-                            >
-                                FECHAR AVALIAÇÃO
-                            </button>
+                            )}
                         </div>
                     </div>
                 )}
+            </main>
 
-                <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-                    <p>Gerenciador de Ranking - SENAI</p>
-                </footer>
+            {selectedMissionForGrading && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(5px)' }}>
+                    <div className="glass-card" style={{ width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#1a1a1a', border: '1px solid var(--primary)' }}>
+                        <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+                            <Star fill="gold" color="gold" /> Avaliar Missão: {selectedMissionForGrading.titulo}
+                        </h3>
+
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                        <th style={{ textAlign: 'left', padding: '1rem' }}>ALUNO</th>
+                                        <th style={{ textAlign: 'center', padding: '1rem' }}>NOTA (0-10)</th>
+                                        <th style={{ textAlign: 'center', padding: '1rem' }}>XP GERADO (3x)</th>
+                                        <th style={{ textAlign: 'right', padding: '1rem' }}>AÇÃO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredStudents.map(student => (
+                                        <StudentGradeRow
+                                            key={student.id}
+                                            student={student}
+                                            missionId={selectedMissionForGrading.id}
+                                            onSave={handleSaveMissionGrade}
+                                        />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button
+                            onClick={() => setSelectedMissionForGrading(null)}
+                            className="btn btn-secondary"
+                            style={{ marginTop: '2rem', width: '100%' }}
+                        >
+                            FECHAR AVALIAÇÃO
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <footer style={{ marginTop: '3rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+                <p>Gerenciador de Ranking - SENAI</p>
+            </footer>
         </div>
     );
 };
